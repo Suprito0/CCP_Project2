@@ -30,7 +30,8 @@ public class FrameBlackAndWhiter extends FrameProcessor {
         super();
     }
 
-    // Checks that the frame is an 8-bit image with enough channels to calculate greyscale.
+    // Checks that the frame is an 8-bit image with enough channels to calculate
+    // greyscale.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -52,7 +53,8 @@ public class FrameBlackAndWhiter extends FrameProcessor {
         convertFrame(pixels);
     }
 
-    // Calculates luminance from BGR and writes the same grey value into each channel.
+    // Calculates luminance from BGR and writes the same grey value into each
+    // channel.
     private void convertFrame(ByteBuffer pixels) {
         int height = videoInfo.imageHeight();
         int width = videoInfo.imageWidth();

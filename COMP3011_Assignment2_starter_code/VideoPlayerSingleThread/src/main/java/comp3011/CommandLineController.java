@@ -15,17 +15,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created in the VideoPlayerApp's main function to receive and parse the video player's command-line arguments.
+ * Created in the VideoPlayerApp's main function to receive and parse the video
+ * player's command-line arguments.
  *
  * <p>
  * Extracts the video file and supported launch options, reports invalid input
- * or help text, and exposes the resulting launch configuration via methods to the
+ * or help text, and exposes the resulting launch configuration via methods to
+ * the
  * {@link VideoPlayerApp}.
  * </p>
  */
 public class CommandLineController {
 
-     // Stores the selected effects in command-line order.
+    // Stores the selected effects in command-line order.
     private final List<String> effectNames = new ArrayList<>();
 
     // Settings determined by the command-line arguments.
@@ -47,11 +49,12 @@ public class CommandLineController {
         }
     }
 
-    // Returns a copy of the selected effects so the original list cannot be modified.
+    // Returns a copy of the selected effects so the original list cannot be
+    // modified.
     public List<String> getEffectNames() {
         return List.copyOf(effectNames);
     }
-    
+
     public File getVideoFile() {
         return videoFile;
     }
@@ -76,7 +79,8 @@ public class CommandLineController {
         return maximiseRequested;
     }
 
-    // Only launches the player if a valid video was provided and help was not requested.
+    // Only launches the player if a valid video was provided and help was not
+    // requested.
     public boolean shouldLaunchApplication() {
         return errorMessage == null && videoFile != null && !helpRequested;
     }
@@ -131,23 +135,24 @@ public class CommandLineController {
                 case 'j' -> effectNames.add("jitter");
                 case 'm' -> effectNames.add("mottle");
                 case 'b' -> effectNames.add("bleed");
-                case 'P' -> effectNames.add("pepper");
+                case 'p' -> effectNames.add("pepper");
                 default -> setError("Unknown option: -" + letter);
             }
         }
     }
 
-    // Goes through all command-line arguments and separates options from the video filename.
+    // Goes through all command-line arguments and separates options from the video
+    // filename.
     private void parse(String[] args) {
         List<String> fileNames = new ArrayList<>();
         for (String arg : args) {
             // long-form options.
             if (arg.startsWith("--")) {
                 parseLongOption(arg);
-            // short options
+                // short options
             } else if (arg.startsWith("-") && arg.length() > 1) {
                 parseShortOptions(arg.substring(1));
-            // Anything else is treated as a video filename.
+                // Anything else is treated as a video filename.
             } else {
                 fileNames.add(arg);
             }
@@ -190,17 +195,17 @@ public class CommandLineController {
         System.out.println("  -2, --monitor-2    Open the player on display 2");
         System.out.println();
         System.out.println("Frame processors:");
-        System.out.println("  -n, --number-frames      Render the frame number onto each frame");
-        System.out.println("  -s, --scratch-frames     Render vertical film scratches");
-        System.out.println("  -f, --flicker-frames     Randomly dim frames");
-        System.out.println("  -w, --black-and-white    Convert frames to black and white");
-        System.out.println("  -y, --yellow-frames      Apply a warmer colour temperature");
-        System.out.println("  -v, --vignette-frames    Darken the frame edges");
-        System.out.println("  -d, --dust-frames        Render dust and hair marks");
-        System.out.println("  -j, --jitter-frames      Randomly displace frames by a few pixels");
-        System.out.println("  -m, --mottle-frames      Add cloudy emulsion mottling");
-        System.out.println("  -b, --bleed-frames       Bleed light into frames");
-        System.out.println("  -P, --pepper-frames      Pepper frames with dark spots/blotches");
+        System.out.println("  -n, --number-frames    Render the frame number onto each frame");
+        System.out.println("  -s, --scratch-frames   Render vertical film scratches");
+        System.out.println("  -f, --flicker-frames   Randomly dim frames");
+        System.out.println("  -w, --black-and-white  Convert frames to black and white");
+        System.out.println("  -y, --yellow-frames    Apply a warmer colour temperature");
+        System.out.println("  -v, --vignette-frames  Darken the frame edges");
+        System.out.println("  -d, --dust-frames      Render dust and hair marks");
+        System.out.println("  -j, --jitter-frames    Randomly displace frames by a few pixels");
+        System.out.println("  -m, --mottle-frames    Add cloudy emulsion mottling");
+        System.out.println("  -b, --bleed-frames     Bleed light into frames");
+        System.out.println("  -p, --pepper-frames    Pepper frames with dark spots/blotches");
         System.out.println();
         System.out.println("Frame processors are applied in command-line order and may be repeated.");
         System.out.println("Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,");

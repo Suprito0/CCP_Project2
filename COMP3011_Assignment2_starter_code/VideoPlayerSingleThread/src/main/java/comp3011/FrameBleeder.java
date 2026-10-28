@@ -64,7 +64,8 @@ public class FrameBleeder extends FrameProcessor {
         buildSamplingLookups();
     }
 
-    // Validates the frame, builds a mask of bright spots, blurs it and adds the glow.
+    // Validates the frame, builds a mask of bright spots, blurs it and adds the
+    // glow.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -83,7 +84,8 @@ public class FrameBleeder extends FrameProcessor {
             throw new Exception("FrameBleeder requires at least three image channels");
         }
 
-        // Three stages: detect light, spread it and blend the light back into the image.
+        // Three stages: detect light, spread it and blend the light back into the
+        // image.
         buildBrightMask(pixels);
         blurBrightMask();
         applyBleed(pixels);
@@ -125,7 +127,8 @@ public class FrameBleeder extends FrameProcessor {
         }
     }
 
-    // Finds the brightest pixel in each block instead of processing a full-size mask.
+    // Finds the brightest pixel in each block instead of processing a full-size
+    // mask.
     private void buildBrightMask(ByteBuffer pixels) {
         int width = videoInfo.imageWidth();
         int height = videoInfo.imageHeight();

@@ -15,8 +15,10 @@ import java.nio.ByteBuffer;
 import org.bytedeco.javacv.Frame;
 
 /**
- * Darkens image edges to create a vignette. Older projectors struggle to provide uniform illumination over the full
- * projection bed, often showing fall away at the edges. This effect nicely simulates this.
+ * Darkens image edges to create a vignette. Older projectors struggle to
+ * provide uniform illumination over the full
+ * projection bed, often showing fall away at the edges. This effect nicely
+ * simulates this.
  *
  * <p>
  * Initialisation builds Gaussian-like fading lookup tables for each axis.

@@ -42,23 +42,18 @@ public class FramePepperer extends FrameProcessor {
     private static final double MAX_BOUNDARY_WARP = 0.22;
     private static final int SEED_SALT = 0x50455050;
 
-    // Each instance keeps its own deterministic random sequence.
-    private static int nextInstanceIndex;
-
-    private final int instanceIndex;
     private int mediaSeed;
 
     // Creates a separate random sequence for this dark-blotch effect.
     public FramePepperer() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     // Builds a repeatable seed using the video name and effect number.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), effectInstanceIndex() + SEED_SALT);
     }
 
     // Chooses a number of random spots and draws them on the current frame.

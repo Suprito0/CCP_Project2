@@ -20,18 +20,35 @@ import org.bytedeco.javacv.Frame;
  *
  * <p>
  * {@link VideoPlayerModel} initialises each processor once with video metadata,
- * then invokes {@link #process(Frame, InfoFrame)} for every image frame in a set order
- * before it is converted for display. Note that all FrameProcessors should be written
- * to be deterministic - that is they apply the same effect to the same frame number of
- * the same media name, but otherwise can look 'random'. This allows for the reliable
- * determination of accurately applied effects in the correct order free of any race
- * conditions, frame overwrites or frame tearing etc. Some helper methods are provided
+ * then invokes {@link #process(Frame, InfoFrame)} for every image frame in a
+ * set order
+ * before it is converted for display. Note that all FrameProcessors should be
+ * written
+ * to be deterministic - that is they apply the same effect to the same frame
+ * number of
+ * the same media name, but otherwise can look 'random'. This allows for the
+ * reliable
+ * determination of accurately applied effects in the correct order free of any
+ * race
+ * conditions, frame overwrites or frame tearing etc. Some helper methods are
+ * provided
  * for this.
  * </p>
  */
 public abstract class FrameProcessor {
     // Shared video metadata is available to subclasses after initialise().
     protected InfoVideo videoInfo;
+
+    // The same effect occurance must use the same seed in every worker
+    private int assignedInstanceIndex;
+
+    public void setAssignedInstanceIndex(int index) {
+        assignedInstanceIndex = index;
+    }
+
+    protected int effectInstanceIndex() {
+        return assignedInstanceIndex;
+    }
 
     // Creates the shared base class for all visual effects.
     public FrameProcessor() {
@@ -42,9 +59,12 @@ public abstract class FrameProcessor {
         this.videoInfo = videoInfo;
     }
 
-    // Obtain a unique seed for this media name and effect instance index. That is, for a given media name, say
-    // 'movie.mp4' and a given position in the list of effects being applied, this will return a unique and different
-    // seed for each effect. This is useful for creating the illusion of randomness whilst keeping everything
+    // Obtain a unique seed for this media name and effect instance index. That is,
+    // for a given media name, say
+    // 'movie.mp4' and a given position in the list of effects being applied, this
+    // will return a unique and different
+    // seed for each effect. This is useful for creating the illusion of randomness
+    // whilst keeping everything
     // deterministic.
     // Combines video identity and effect index for deterministic randomness.
     protected int saltedMediaSeed(String mediaName, int instanceIndex) {

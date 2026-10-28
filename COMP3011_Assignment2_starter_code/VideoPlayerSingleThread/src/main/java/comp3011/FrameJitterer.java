@@ -16,13 +16,17 @@ import java.util.Random;
 import org.bytedeco.javacv.Frame;
 
 /**
- * Randomly offsets each image frame to simulate unstable film transport. The sprockets driving film through old
- * projectors always had a tiny bit of slack or take-up in them, causing frames to jitter up and down or left and right
- * slightly as they went through the projection bed. Simple but effective little effect.
+ * Randomly offsets each image frame to simulate unstable film transport. The
+ * sprockets driving film through old
+ * projectors always had a tiny bit of slack or take-up in them, causing frames
+ * to jitter up and down or left and right
+ * slightly as they went through the projection bed. Simple but effective little
+ * effect.
  *
  * <p>
  * A deterministic per-frame random sequence chooses horizontal and vertical
- * offsets. {@link #jitterFrame(ByteBuffer, int, int)} copies the original pixels
+ * offsets. {@link #jitterFrame(ByteBuffer, int, int)} copies the original
+ * pixels
  * into the shifted position and fills exposed areas with black.
  * </p>
  */
@@ -30,9 +34,6 @@ public class FrameJitterer extends FrameProcessor {
     // The salt makes jitter randomness different from other visual effects.
     private static final int SEED_SALT = 0x4a495454;
 
-    private static int nextInstanceIndex;
-
-    private final int instanceIndex;
     private int mediaSeed;
     // Reused during pixel movement so pixels are not overwritten while shifting.
     private byte[] sourcePixels;
@@ -41,14 +42,13 @@ public class FrameJitterer extends FrameProcessor {
     // Tracks a unique instance of the frame-shifting effect.
     public FrameJitterer() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     // Allocates reusable buffers for moving pixels and clearing exposed edges.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), effectInstanceIndex() + SEED_SALT);
 
         int frameBytes = videoInfo.imageStride() * videoInfo.imageHeight();
         int widthBytes = videoInfo.imageWidth() * videoInfo.imageChannels();
@@ -131,7 +131,8 @@ public class FrameJitterer extends FrameProcessor {
         return 1;
     }
 
-    // Copies the original pixels, shifts them and fills any uncovered area with black.
+    // Copies the original pixels, shifts them and fills any uncovered area with
+    // black.
     private void jitterFrame(ByteBuffer pixels, int xOffset, int yOffset) {
         int height = videoInfo.imageHeight();
         int width = videoInfo.imageWidth();

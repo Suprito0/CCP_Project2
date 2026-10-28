@@ -18,7 +18,8 @@ import java.util.Random;
 import org.bytedeco.javacv.Frame;
 
 /**
- * Draws moving vertical scratches to simulate damaged film stock. Some scratches are one pixel wide, some are two. They
+ * Draws moving vertical scratches to simulate damaged film stock. Some
+ * scratches are one pixel wide, some are two. They
  * move at different rates horizontally and come and go from the film stock.
  *
  * <p>
@@ -34,9 +35,6 @@ public class FrameScratcher extends FrameProcessor {
     private static final double THICK_SCRATCH_PROBABILITY = 0.15;
     private static final int SCRATCH_MAX_TRAVEL = 32;
 
-    private static int nextInstanceIndex;
-
-    private final int instanceIndex;
     // Generated once for a video, then checked against the current frame.
     private final List<Scratch> scratches = new ArrayList<>();
     private int mediaSeed;
@@ -44,14 +42,13 @@ public class FrameScratcher extends FrameProcessor {
     // Creates one scratch effect with its own repeatable random seed.
     public FrameScratcher() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     // Generates all possible scratches for this video timeline.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), effectInstanceIndex());
         generateScratches();
     }
 

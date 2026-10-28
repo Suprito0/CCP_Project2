@@ -111,7 +111,8 @@ public class VideoPlayerModel {
         this.frameProcessors = new ArrayList<>(processors);
     }
 
-    // Stores the selected file, clears previous timing and starts playback from zero.
+    // Stores the selected file, clears previous timing and starts playback from
+    // zero.
     public void play(File file) {
         videoFile = file;
         videoDurationUs = NO_SEEK_REQUEST;
@@ -247,7 +248,8 @@ public class VideoPlayerModel {
 
     // Creates the FFmpeg grabber, reads metadata and opens audio if present.
     private void openPlaybackResources(long startTimestampUs) throws Exception {
-        // Opening/decoding media can block; this starter version runs it on the GUI thread.
+        // Opening/decoding media can block; this starter version runs it on the GUI
+        // thread.
         converter = new JavaFXFrameConverter();
         grabber = new FFmpegFrameGrabber(videoFile);
         grabber.setImageMode(FrameGrabber.ImageMode.COLOR);
@@ -279,7 +281,8 @@ public class VideoPlayerModel {
         }
     }
 
-    // Clears outstanding media and establishes a new timing reference after seeking.
+    // Clears outstanding media and establishes a new timing reference after
+    // seeking.
     private void resetPlaybackClock(long logicalTimestampUs) {
         pendingAudio.clear();
         preparedFrame = null;
@@ -312,7 +315,8 @@ public class VideoPlayerModel {
         }
     }
 
-    // Gets decoded frames, queues audio, processes images and calculates display times.
+    // Gets decoded frames, queues audio, processes images and calculates display
+    // times.
     private PreparedFrame readNextVideoFrame() throws Exception {
         // Read frames until an image is found, or the media reaches its end.
         while (playbackOpen) {
@@ -377,13 +381,19 @@ public class VideoPlayerModel {
         return null;
     }
 
-    // This is called on a heart beat by the GUI thread. We want to be co-operative here by (a) not blocking, and (b)
-    // getting our required work out of the way quickly so that we can return control flow to the JavaFX event loop for
-    // handling user interaction with the GUI and rendering. We have three jobs: (1) keep audio flowing if sound is on,
-    // (2) display a frame if it is due and (3) prepare the next frame if we're in the window after the previous frame
-    // has gone to the display. We don't buffer frames here, just handling them one at a time. Not a great architecture,
+    // This is called on a heart beat by the GUI thread. We want to be co-operative
+    // here by (a) not blocking, and (b)
+    // getting our required work out of the way quickly so that we can return
+    // control flow to the JavaFX event loop for
+    // handling user interaction with the GUI and rendering. We have three jobs: (1)
+    // keep audio flowing if sound is on,
+    // (2) display a frame if it is due and (3) prepare the next frame if we're in
+    // the window after the previous frame
+    // has gone to the display. We don't buffer frames here, just handling them one
+    // at a time. Not a great architecture,
     // living on the edge a bit, but can't do much better on a single thread.
-    // Runs once per JavaFX timer tick: audio first, then image display and frame preparation.
+    // Runs once per JavaFX timer tick: audio first, then image display and frame
+    // preparation.
     private void pumpPlayback(long now) {
         if (!playbackOpen) {
             return;
@@ -394,12 +404,15 @@ public class VideoPlayerModel {
 
         // Task (2)
         if (preparedFrame != null && preparedFrame.targetTimeNs() <= now) {
-            // We have a prepared frame ready to go and it is due (or just past due!) so get it up on screen ASAP!
+            // We have a prepared frame ready to go and it is due (or just past due!) so get
+            // it up on screen ASAP!
             displayPreparedFrame(now);
         }
 
-        // Task (3). We'll try and be nice to the GUI event loop here by queueing the prepareNextFrame call rather than
-        // hogging the thread and doing it here, hence the tricky callback and use of prepareNextFrameQueued. Feel free
+        // Task (3). We'll try and be nice to the GUI event loop here by queueing the
+        // prepareNextFrame call rather than
+        // hogging the thread and doing it here, hence the tricky callback and use of
+        // prepareNextFrameQueued. Feel free
         // to replace this whole block with simple linear control flow logic
         // such as: if (!pauseRequested && preparedFrame == null) prepareNextFrame();
         // to compare.
@@ -415,14 +428,16 @@ public class VideoPlayerModel {
         }
     }
 
-    // Displays the due image and reports how much time was left before its deadline.
+    // Displays the due image and reports how much time was left before its
+    // deadline.
     private void displayPreparedFrame(long now) {
         PreparedFrame frame = preparedFrame;
         preparedFrame = null;
         currentTimestampUs = frame.logicalTimestampUs();
         relativeSeekBaseUs = NO_SEEK_REQUEST;
 
-        // Dump some logging to the console once per second so that real time performance can be monitored.
+        // Dump some logging to the console once per second so that real time
+        // performance can be monitored.
         if (intFrameRate > 0 && frame.frameNumber() % intFrameRate == 0) {
             long remainingUs = (frame.targetTimeNs() - frame.preparedAtNs()) / 1_000L;
             if (remainingUs < 0) {
@@ -644,7 +659,8 @@ public class VideoPlayerModel {
             long preparedAtNs) {
     }
 
-    // Holds one audio chunk while keeping track of partial writes to the sound device.
+    // Holds one audio chunk while keeping track of partial writes to the sound
+    // device.
     private static class PendingAudio {
         private final long timestampUs;
         private final byte[] samples;

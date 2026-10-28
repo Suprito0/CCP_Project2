@@ -23,7 +23,8 @@ import org.bytedeco.javacv.Frame;
  * <p>
  * Initialisation builds multi-scale noise fields and colour lookup tables.
  * {@link #process(Frame, InfoFrame)} samples those fields in image blocks and
- * applies the selected channel scales through {@link #applyMottleBlock(ByteBuffer, int, int, int, int, int, int)}.
+ * applies the selected channel scales through
+ * {@link #applyMottleBlock(ByteBuffer, int, int, int, int, int, int)}.
  * </p>
  */
 public class FrameMottler extends FrameProcessor {
@@ -55,10 +56,6 @@ public class FrameMottler extends FrameProcessor {
     private static final int MEDIUM_FIELD_SALT = 0x4d454449;
     private static final int LARGE_FIELD_SALT = 0x4c415247;
 
-    // Gives repeated mottle effects separate random patterns.
-    private static int nextInstanceIndex;
-
-    private final int instanceIndex;
     private int mediaSeed;
     // Cache slowly changing damage fields instead of rebuilding them every frame.
     private int cachedDamageMaskSegment = Integer.MIN_VALUE;
@@ -78,19 +75,19 @@ public class FrameMottler extends FrameProcessor {
     // Initialises one independent instance of the old-film mottle effect.
     public FrameMottler() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     // Builds the reusable noise sampling tables and colour scaling tables.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), effectInstanceIndex() + SEED_SALT);
         buildSamplingLookups();
         buildScaleLookups();
     }
 
-    // Generates uneven brightness and stains for the current frame, then applies them.
+    // Generates uneven brightness and stains for the current frame, then applies
+    // them.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -109,7 +106,8 @@ public class FrameMottler extends FrameProcessor {
             throw new Exception("FrameMottler requires at least three image channels");
         }
 
-        // Build two independently seeded fields: one for brightness and one for colour stains.
+        // Build two independently seeded fields: one for brightness and one for colour
+        // stains.
         double[] brightnessField = buildMultiScaleNoiseField(info.frameNumber(), BRIGHTNESS_FIELD_SALT);
         double[] stainField = buildMultiScaleNoiseField(info.frameNumber(), STAIN_FIELD_SALT);
         int damageMaskSegment = info.frameNumber() / DAMAGE_MASK_BLEND_FRAMES;
@@ -209,7 +207,8 @@ public class FrameMottler extends FrameProcessor {
         return field;
     }
 
-    // Generates a seeded random grid, repeatedly smooths it and normalises the result.
+    // Generates a seeded random grid, repeatedly smooths it and normalises the
+    // result.
     private double[] buildNoiseField(int frameNumber, int fieldSalt, int smoothingPasses) {
         double[] field = new double[NOISE_GRID_WIDTH * NOISE_GRID_HEIGHT];
         double[] scratch = new double[field.length];
@@ -285,7 +284,8 @@ public class FrameMottler extends FrameProcessor {
         }
     }
 
-    // Processes small blocks rather than recalculating stain strength for every pixel.
+    // Processes small blocks rather than recalculating stain strength for every
+    // pixel.
     private void mottleFrame(
             ByteBuffer pixels,
             double[] brightnessField,
@@ -368,7 +368,8 @@ public class FrameMottler extends FrameProcessor {
         return lerp(top, bottom, yBlend);
     }
 
-    // Converts brightness and stain intensity into red, green and blue scale tables.
+    // Converts brightness and stain intensity into red, green and blue scale
+    // tables.
     private void setBlockScaleIndices(double brightness, double stain, double damageStrength) {
         double brightnessScale;
         if (brightness < 0.5) {

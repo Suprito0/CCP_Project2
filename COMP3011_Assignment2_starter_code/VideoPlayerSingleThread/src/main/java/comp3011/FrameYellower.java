@@ -15,7 +15,8 @@ import java.nio.ByteBuffer;
 import org.bytedeco.javacv.Frame;
 
 /**
- * Warms frame colours to simulate a lower colour-temperature film image. This is not really a film stock thing, more an
+ * Warms frame colours to simulate a lower colour-temperature film image. This
+ * is not really a film stock thing, more an
  * old projector thing. Definitely gives playback a more ye olde look.
  *
  * <p>
@@ -70,7 +71,8 @@ public class FrameYellower extends FrameProcessor {
 
     // Calculates new red, green and blue scales from two colour temperatures.
     private void buildLookups() {
-        // Approximate each colour temperature as the RGB colour of a black-body radiator.
+        // Approximate each colour temperature as the RGB colour of a black-body
+        // radiator.
         // The relative change between white points determines each colour scale.
         Rgb sourceWhite = kelvinToRgb(SOURCE_KELVIN);
         Rgb destinationWhite = kelvinToRgb(DESTINATION_KELVIN);

@@ -18,9 +18,12 @@ import org.bytedeco.javacv.Frame;
 /**
  * Adds dark dust and hair-like marks to simulate damaged film.
  *
- * <p>{@link #process(Frame, InfoFrame)} uses a deterministic, media-specific
- * random sequence and a Poisson-distributed mark count. {@link #drawRandomDustMark(ByteBuffer, Random)}
- * draws each curved mark as a series of softly darkened points.</p>
+ * <p>
+ * {@link #process(Frame, InfoFrame)} uses a deterministic, media-specific
+ * random sequence and a Poisson-distributed mark count.
+ * {@link #drawRandomDustMark(ByteBuffer, Random)}
+ * draws each curved mark as a series of softly darkened points.
+ * </p>
  */
 public class FrameDuster extends FrameProcessor {
     // Controls how often marks appear and how their shape looks.
@@ -38,26 +41,22 @@ public class FrameDuster extends FrameProcessor {
     private static final double UNIFORM_ANGLE_PROBABILITY = 0.18;
     private static final int SEED_SALT = 0x44555354;
 
-    // Different instances get different seeds, even for the same movie.
-    private static int nextInstanceIndex;
-
-    private final int instanceIndex;
     private int mediaSeed;
 
     // Gives this dust effect its own instance index so repeated effects differ.
     public FrameDuster() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     // Builds a repeatable random seed from the video name and effect instance.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), effectInstanceIndex() + SEED_SALT); 
     }
 
-    // Chooses how many dust marks to draw on this frame using a seeded random generator.
+    // Chooses how many dust marks to draw on this frame using a seeded random
+    // generator.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -88,7 +87,8 @@ public class FrameDuster extends FrameProcessor {
         }
     }
 
-    // Converts the configured number of marks per second into marks per video frame.
+    // Converts the configured number of marks per second into marks per video
+    // frame.
     private double dustMarksPerFrame() {
         if (videoInfo.frameRate() <= 0.0) {
             return DUST_MARKS_PER_SECOND / Math.max(1, videoInfo.intFrameRate());

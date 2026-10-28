@@ -23,7 +23,8 @@ import javafx.scene.input.KeyEvent;
  * The controller part of the video player model-view-controller architecture.
  * 
  * <p>
- * Wires up events from the {@link VideoPlayerView} to the {@link VideoPlayerModel}.
+ * Wires up events from the {@link VideoPlayerView} to the
+ * {@link VideoPlayerModel}.
  * This includes button actions, keyboard shortcuts and display resizing.
  * </p>
  */

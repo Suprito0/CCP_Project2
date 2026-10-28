@@ -19,9 +19,12 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 /**
- * Extents JavaFX's Application class and is the entry point for the video player.
- * Provided required JavaFX methods start and stop and also basic on-screen window
- * management functions. Owns the {@link VideoPlayerController}, which in turn owns
+ * Extents JavaFX's Application class and is the entry point for the video
+ * player.
+ * Provided required JavaFX methods start and stop and also basic on-screen
+ * window
+ * management functions. Owns the {@link VideoPlayerController}, which in turn
+ * owns
  * the {@link VideoPlayerView} and {@link VideoPlayerController}.
  *
  * <p>
@@ -41,7 +44,8 @@ public class VideoPlayerApp extends Application {
     private int videoWidth;
     private int videoHeight;
 
-    // Builds the player window, connects the controller and begins playing the chosen video.
+    // Builds the player window, connects the controller and begins playing the
+    // chosen video.
     @Override
     public void start(Stage stage) {
         this.stage = stage;

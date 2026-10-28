@@ -15,14 +15,17 @@ import java.nio.ByteBuffer;
 import org.bytedeco.javacv.Frame;
 
 /**
- * Draws the current video-frame number in the bottom-right corner of each frame,
- * using tiny 'seven segment display'-like rendering. This lets us read frame number
+ * Draws the current video-frame number in the bottom-right corner of each
+ * frame,
+ * using tiny 'seven segment display'-like rendering. This lets us read frame
+ * number
  * off screen captures so the correctness of other effects can be compared to a
  * reference implementation display the exact same frame number.
  *
  * <p>
  * {@link #process(Frame, InfoFrame)} converts the number to digits, and
- * {@link #drawDigit(ByteBuffer, int, int, int)} renders each digit using a small
+ * {@link #drawDigit(ByteBuffer, int, int, int)} renders each digit using a
+ * small
  * seven-segment-style pixel glyph.
  * </p>
  */
@@ -79,7 +82,8 @@ public class FrameNumberer extends FrameProcessor {
             throw new Exception("FrameNumberer requires at least one image channel");
         }
 
-        // Convert the frame number into digits before rendering the seven-segment shapes.
+        // Convert the frame number into digits before rendering the seven-segment
+        // shapes.
         String text = Integer.toString(Math.max(0, info.frameNumber()));
         int textWidth = text.length() * TILE_WIDTH + (text.length() - 1) * TILE_SPACING;
         int textHeight = TILE_HEIGHT;

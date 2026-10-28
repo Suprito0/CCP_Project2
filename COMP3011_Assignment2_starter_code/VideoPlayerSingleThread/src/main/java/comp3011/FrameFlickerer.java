@@ -16,8 +16,10 @@ import java.util.Random;
 import org.bytedeco.javacv.Frame;
 
 /**
- * Varies a frame's brightness to simulate film-projector flicker. Because of slight variations in timing and lamp
- * incandescence, old movie projectors would cause the movies to flicker, hence movies became known as 'flicks'.
+ * Varies a frame's brightness to simulate film-projector flicker. Because of
+ * slight variations in timing and lamp
+ * incandescence, old movie projectors would cause the movies to flicker, hence
+ * movies became known as 'flicks'.
  *
  * <p>
  * The media name and frame number seed a deterministic random brightness
@@ -29,23 +31,18 @@ public class FrameFlickerer extends FrameProcessor {
     // Controls the typical amount of brightness variation.
     private static final double FLICKER_PERCENTAGE_SD = 5.0;
 
-    // Distinguishes repeated copies of this effect.
-    private static int nextInstanceIndex;
-
-    private final int instanceIndex;
     private int mediaSeed;
 
     // Gives each flicker effect its own repeatable random sequence.
     public FrameFlickerer() {
         super();
-        instanceIndex = nextInstanceIndex++;
     }
 
     // Builds the seed used to choose brightness for each frame.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex);
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), effectInstanceIndex());
     }
 
     // Chooses a slight random dimming amount for the current frame.

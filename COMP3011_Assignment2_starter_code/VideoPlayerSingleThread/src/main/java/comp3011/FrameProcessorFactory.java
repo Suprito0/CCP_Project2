@@ -1,15 +1,22 @@
 package comp3011;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Makes a new processor for every command-line occurrence. */
 public class FrameProcessorFactory {
 
     public static List<FrameProcessor> createProcessors(List<String> names) {
         List<FrameProcessor> processors = new ArrayList<>();
+        Map<String, Integer> counts = new HashMap<>();
         for (String name : names) {
-            processors.add(create(name));
+            FrameProcessor processor = create(name);
+            int occurrence = counts.getOrDefault(name, 0);
+            counts.put(name, occurrence + 1); 
+            processor.setAssignedInstanceIndex(occurrence); 
+            processors.add(processor);
         }
         return processors;
     }
