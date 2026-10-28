@@ -27,10 +27,12 @@ import javafx.scene.input.KeyEvent;
  * </p>
  */
 public class VideoPlayerController {
+    // The model handles playback; the view handles display and buttons.
     private final VideoPlayerModel model;
     private final VideoPlayerView view;
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
 
+    // Creates the view and model, then connects buttons and callbacks.
     public VideoPlayerController(
             boolean audioEnabled,
             BiConsumer<Integer, Integer> videoSizeChangedHandler) {
@@ -44,6 +46,7 @@ public class VideoPlayerController {
                 this::onPlaybackStateChanged,
                 this::onAudioOutputStateChanged);
 
+        // Connect each button to the corresponding controller method.
         view.getStartOverButton().setOnAction(_ -> startOver());
         view.getBackFiveButton().setOnAction(_ -> backFiveSeconds());
         view.getPausePlayButton().setOnAction(_ -> togglePause());
@@ -53,6 +56,7 @@ public class VideoPlayerController {
         view.showAudioEnabled(model.isAudioOutputEnabled());
     }
 
+    // Connects keys to actions such as pause, seek, stop and mute.
     public void installKeyboardShortcuts(Scene scene) {
         scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.ESCAPE) {
@@ -77,56 +81,69 @@ public class VideoPlayerController {
         });
     }
 
+    // Gives VideoPlayerApp access to the visual layout.
     public VideoPlayerView getView() {
         return view;
     }
 
+    // Enables the controls and tells the model to open the video.
     public void play(File file) {
         view.setPlaybackControlsDisabled(false);
         model.play(file);
     }
 
+    // Asks the model to release its resources.
     public void shutdown() {
         model.shutdown();
     }
 
+    // Requests a seek back to the beginning.
     private void startOver() {
         model.startOver();
     }
 
+    // Requests a five-second rewind.
     private void backFiveSeconds() {
         model.backFiveSeconds();
     }
 
+    // Switches between paused and playing states.
     private void togglePause() {
         model.togglePause();
     }
 
+    // Requests a five-second skip forward.
     private void forwardFiveSeconds() {
         model.forwardFiveSeconds();
     }
 
+    // Switches audio playback on or off.
     private void toggleAudioOutput() {
         model.toggleAudioOutput();
     }
 
+    // Stops playback and closes the JavaFX application.
     private void stopAndExit() {
         model.stopPlayback();
         javafx.application.Platform.exit();
     }
 
+    // Passes the decoded video size back to the window.
     private void onVideoSizeChanged(int width, int height) {
         videoSizeChangedHandler.accept(width, height);
     }
 
+    // Displays an image supplied by the model.
     private void onFrameReady(Image image) {
         view.setImage(image);
     }
 
+    // Updates the status text shown in the controls.
     private void onStatusChanged(String status) {
         view.setStatus(status);
     }
 
+    // Changes the play/pause icon to match the current state.
     private void onPlaybackStateChanged(boolean playing, boolean paused) {
         if (playing && !paused) {
             view.showPauseAction();
@@ -135,6 +152,7 @@ public class VideoPlayerController {
         }
     }
 
+    // Updates the audio icon to match the mute setting.
     private void onAudioOutputStateChanged(boolean audioOutputEnabled) {
         view.showAudioEnabled(audioOutputEnabled);
     }

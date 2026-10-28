@@ -28,6 +28,7 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameScratcher extends FrameProcessor {
+    // Controls the frequency, length and sideways movement of scratches.
     private static final int FRAMES_PER_NEW_SCRATCH = 48;
     private static final double MEAN_SCRATCH_LENGTH = 96;
     private static final double THICK_SCRATCH_PROBABILITY = 0.15;
@@ -36,14 +37,17 @@ public class FrameScratcher extends FrameProcessor {
     private static int nextInstanceIndex;
 
     private final int instanceIndex;
+    // Generated once for a video, then checked against the current frame.
     private final List<Scratch> scratches = new ArrayList<>();
     private int mediaSeed;
 
+    // Creates one scratch effect with its own repeatable random seed.
     public FrameScratcher() {
         super();
         instanceIndex = nextInstanceIndex++;
     }
 
+    // Generates all possible scratches for this video timeline.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
@@ -51,6 +55,7 @@ public class FrameScratcher extends FrameProcessor {
         generateScratches();
     }
 
+    // Draws only the scratches that overlap the current video frame.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -72,6 +77,7 @@ public class FrameScratcher extends FrameProcessor {
         double frameStart = info.frameNumber();
         double frameEnd = frameStart + 1.0;
 
+        // Only the part of each scratch overlapping this frame should be drawn.
         for (Scratch scratch : scratches) {
             double scratchStart = Math.max(scratch.startFrame(), frameStart);
             double scratchEnd = Math.min(scratch.endFrame(), frameEnd);
@@ -85,6 +91,7 @@ public class FrameScratcher extends FrameProcessor {
         }
     }
 
+    // Creates scratches with random starts, lengths, positions and thicknesses.
     private void generateScratches() {
         scratches.clear();
 
@@ -110,28 +117,34 @@ public class FrameScratcher extends FrameProcessor {
         }
     }
 
+    // Samples a random scratch duration from an exponential distribution.
     private double nextExponential(Random random, double mean) {
         return -mean * Math.log(1.0 - random.nextDouble());
     }
 
+    // Converts a position within one frame into a vertical pixel location.
     private int frameOffsetToY(double frameOffset) {
         int y = (int) Math.floor(frameOffset * videoInfo.imageHeight());
         return clamp(y, 0, videoInfo.imageHeight());
     }
 
+    // Rounds the bottom of a scratch section up to the next pixel.
     private int frameOffsetToYCeiling(double frameOffset) {
         int y = (int) Math.ceil(frameOffset * videoInfo.imageHeight());
         return clamp(y, 0, videoInfo.imageHeight());
     }
 
+    // Prevents positions from going outside valid bounds.
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Chooses how far a scratch will drift sideways over its lifetime.
     private int randomScratchTravel(Random random) {
         return random.nextInt(2 * SCRATCH_MAX_TRAVEL + 1) - SCRATCH_MAX_TRAVEL;
     }
 
+    // Finds the horizontal location of a moving scratch in the current frame.
     private int scratchXAtFrameStart(Scratch scratch, double frameStart) {
         double scratchDuration = scratch.endFrame() - scratch.startFrame();
         if (scratchDuration <= 0) {
@@ -145,6 +158,7 @@ public class FrameScratcher extends FrameProcessor {
         return clamp((int) Math.round(x), 0, videoInfo.imageWidth() - 1);
     }
 
+    // Draws a one- or two-pixel-wide dark scratch.
     private void drawVerticalLine(ByteBuffer pixels, int x, int yStart, int yEnd, boolean thick) {
         drawSinglePixelVerticalLine(pixels, x, yStart, yEnd);
 
@@ -156,12 +170,14 @@ public class FrameScratcher extends FrameProcessor {
         }
     }
 
+    // Draws one column of dark pixels between the supplied rows.
     private void drawSinglePixelVerticalLine(ByteBuffer pixels, int x, int yStart, int yEnd) {
         for (int y = yStart; y < yEnd; y++) {
             setPixel(pixels, x, y, 0);
         }
     }
 
+    // Writes a pixel value using the decoded image row stride.
     private void setPixel(ByteBuffer pixels, int x, int y, int value) {
         int base = y * videoInfo.imageStride() + x * videoInfo.imageChannels();
         byte byteValue = (byte) value;
@@ -171,6 +187,7 @@ public class FrameScratcher extends FrameProcessor {
         }
     }
 
+    // Stores the start time, end time, location and thickness of a scratch.
     private record Scratch(
             double startFrame,
             double endFrame,

@@ -25,23 +25,28 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameYellower extends FrameProcessor {
+    // Lower destination Kelvin makes the image appear warmer.
     private static final double SOURCE_KELVIN = 3200.0;
     private static final double DESTINATION_KELVIN = 2700.0;
 
+    // Tables avoid recalculating colour temperature for each pixel.
     private byte[] redLookup;
     private byte[] greenLookup;
     private byte[] blueLookup;
 
+    // Creates an effect that makes the video colours warmer.
     public FrameYellower() {
         super();
     }
 
+    // Calculates the colour conversion tables for this video.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
         buildLookups();
     }
 
+    // Checks the input image and applies the warmer colour tone.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -63,8 +68,10 @@ public class FrameYellower extends FrameProcessor {
         yellowFrame(pixels);
     }
 
+    // Calculates new red, green and blue scales from two colour temperatures.
     private void buildLookups() {
         // Approximate each colour temperature as the RGB colour of a black-body radiator.
+        // The relative change between white points determines each colour scale.
         Rgb sourceWhite = kelvinToRgb(SOURCE_KELVIN);
         Rgb destinationWhite = kelvinToRgb(DESTINATION_KELVIN);
 
@@ -79,6 +86,7 @@ public class FrameYellower extends FrameProcessor {
         blueLookup = buildLookup(blueScale);
     }
 
+    // Precalculates how each possible byte value changes after scaling.
     private byte[] buildLookup(double scale) {
         byte[] lookup = new byte[256];
         for (int value = 0; value < lookup.length; value++) {
@@ -87,6 +95,7 @@ public class FrameYellower extends FrameProcessor {
         return lookup;
     }
 
+    // Approximates the red, green and blue values of a given colour temperature.
     private Rgb kelvinToRgb(double kelvin) {
         // Empirical Kelvin-to-RGB approximation. Dividing by 100 is part of the
         // standard curve fit, whose branches approximate red-hot to blue-white light.
@@ -113,6 +122,7 @@ public class FrameYellower extends FrameProcessor {
                 clamp(blue, 0.0, 255.0));
     }
 
+    // Applies each colour channel lookup to every decoded pixel.
     private void yellowFrame(ByteBuffer pixels) {
         int height = videoInfo.imageHeight();
         int width = videoInfo.imageWidth();
@@ -131,14 +141,17 @@ public class FrameYellower extends FrameProcessor {
         }
     }
 
+    // Keeps computed colour values within their valid ranges.
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Keeps computed colour values within their valid ranges.
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Stores red, green and blue colour values together.
     private record Rgb(
             double red,
             double green,

@@ -30,11 +30,14 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public abstract class FrameProcessor {
+    // Shared video metadata is available to subclasses after initialise().
     protected InfoVideo videoInfo;
 
+    // Creates the shared base class for all visual effects.
     public FrameProcessor() {
     }
 
+    // Stores the video metadata before any frames are processed.
     public void initialise(InfoVideo videoInfo) throws Exception {
         this.videoInfo = videoInfo;
     }
@@ -43,10 +46,12 @@ public abstract class FrameProcessor {
     // 'movie.mp4' and a given position in the list of effects being applied, this will return a unique and different
     // seed for each effect. This is useful for creating the illusion of randomness whilst keeping everything
     // deterministic.
+    // Combines video identity and effect index for deterministic randomness.
     protected int saltedMediaSeed(String mediaName, int instanceIndex) {
         return hashMediaName(mediaName) + instanceIndex;
     }
 
+    // Uses CRC32 to obtain a repeatable numeric value from a video name.
     private int hashMediaName(String mediaName) {
         CRC32 crc = new CRC32();
         byte[] bytes = mediaName.getBytes(StandardCharsets.UTF_8);
@@ -54,5 +59,6 @@ public abstract class FrameProcessor {
         return (int) crc.getValue();
     }
 
+    // Each effect must implement this method to change a decoded image frame.
     public abstract void process(Frame frame, InfoFrame info) throws Exception;
 }

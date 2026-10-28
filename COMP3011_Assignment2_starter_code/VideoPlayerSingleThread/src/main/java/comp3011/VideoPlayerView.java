@@ -43,8 +43,10 @@ import javafx.scene.shape.StrokeLineCap;
  * </p>
  */
 public class VideoPlayerView {
+    // All playback icons are drawn at the same base size.
     private static final int ICON_SIZE = 28;
 
+    // GUI elements are created once and updated by the controller.
     private final ImageView imageView = new ImageView();
     private final Label statusLabel = new Label("No video loaded");
     private final Label tooltipLabel = new Label();
@@ -58,7 +60,9 @@ public class VideoPlayerView {
     private final Button stopButton;
     private final Button audioButton;
 
+    // Builds the image display, playback buttons, status label and tooltip layer.
     public VideoPlayerView() {
+        // Keep the original video aspect ratio when resizing the player.
         imageView.setPreserveRatio(true);
         imageView.setSmooth(false);
 
@@ -99,58 +103,72 @@ public class VideoPlayerView {
         setButtonTooltips();
     }
 
+    // Returns the root JavaFX layout used by the application Scene.
     public Parent getRoot() {
         return root;
     }
 
+    // Gives the controller access to the restart button.
     public Button getStartOverButton() {
         return startOverButton;
     }
 
+    // Gives the controller access to the rewind button.
     public Button getBackFiveButton() {
         return backFiveButton;
     }
 
+    // Gives the controller access to the pause/play button.
     public Button getPausePlayButton() {
         return pausePlayButton;
     }
 
+    // Gives the controller access to the skip-forward button.
     public Button getForwardFiveButton() {
         return forwardFiveButton;
     }
 
+    // Gives the controller access to the stop button.
     public Button getStopButton() {
         return stopButton;
     }
 
+    // Gives the controller access to the audio button.
     public Button getAudioButton() {
         return audioButton;
     }
 
+    // Changes the text displayed at the bottom of the player.
     public void setStatus(String status) {
         statusLabel.setText(status);
     }
 
+    // Puts the latest decoded frame in the ImageView.
     public void setImage(Image image) {
         imageView.setImage(image);
     }
 
+    // Sets the preferred size of the video display area.
     public void setVideoDisplaySize(double width, double height) {
         videoPane.setPrefSize(width, height);
     }
 
+    // Changes the playback button to a pause icon.
     public void showPauseAction() {
         pausePlayButton.setGraphic(createPauseIcon());
     }
 
+    // Changes the playback button to a play icon.
     public void showPlayAction() {
         pausePlayButton.setGraphic(createPlayIcon());
     }
 
+    // Updates the speaker icon to show the selected sound state.
     public void showAudioEnabled(boolean audioEnabled) {
         audioButton.setGraphic(createAudioIcon(audioEnabled));
     }
 
+    // Enables or disables all playback buttons together.
     public void setPlaybackControlsDisabled(boolean disabled) {
         startOverButton.setDisable(disabled);
         backFiveButton.setDisable(disabled);
@@ -162,6 +180,7 @@ public class VideoPlayerView {
 
     // There are a bunch of tooltip handling methods starting from here. We want to use tooltips so that people with
     // mouse/trackpads can learn what the hotkeys are and hopefully just use them instead, because they are easy/fast.
+    // Registers the keyboard shortcut text for each button.
     private void setButtonTooltips() {
         setButtonTooltip(startOverButton, "[HOME]");
         setButtonTooltip(backFiveButton, "[LEFT]");
@@ -171,6 +190,7 @@ public class VideoPlayerView {
         setButtonTooltip(audioButton, "[A]");
     }
 
+    // Shows and moves a tooltip while the mouse is over one button.
     private void setButtonTooltip(Button button, String text) {
         button.setOnMouseEntered(event -> {
             showTooltip(text, event.getSceneX(), event.getSceneY());
@@ -184,6 +204,7 @@ public class VideoPlayerView {
         button.setOnMousePressed(_ -> hideTooltip());
     }
 
+    // Initialises the floating label used for mouse-over hints.
     private void configureTooltipLabel() {
         tooltipLayer.setMouseTransparent(true);
         tooltipLayer.getChildren().add(tooltipLabel);
@@ -199,6 +220,7 @@ public class VideoPlayerView {
                         + "-fx-text-fill: black;");
     }
 
+    // Sets tooltip text and makes the tooltip visible.
     private void showTooltip(String text, double sceneX, double sceneY) {
         tooltipLabel.setText(text);
         tooltipLabel.setVisible(true);
@@ -209,6 +231,7 @@ public class VideoPlayerView {
         moveTooltip(sceneX, sceneY);
     }
 
+    // Positions the tooltip near the mouse but within the window.
     private void moveTooltip(double sceneX, double sceneY) {
         Point2D point = tooltipLayer.sceneToLocal(sceneX + 12, sceneY + 16);
         double maxX = Math.max(0, tooltipLayer.getWidth() - tooltipLabel.getWidth() - 2);
@@ -218,10 +241,12 @@ public class VideoPlayerView {
                 Math.max(0, Math.min(point.getY(), maxY)));
     }
 
+    // Makes the floating tooltip invisible.
     private void hideTooltip() {
         tooltipLabel.setVisible(false);
     }
 
+    // Creates a consistently sized button containing a drawn icon.
     private Button iconButton(Node icon) {
         Button button = new Button();
         icon.setMouseTransparent(true);
@@ -235,6 +260,7 @@ public class VideoPlayerView {
 
     // Decided to hand code icons here instead of using pre-drawn assets/resources, since the icons are simple and
     // universally recognised and this one they will look better on different DPI displays.
+    // Draws the circular arrow icon used for restart and five-second seeking.
     private Node createLoopIcon(boolean clockwise, String text) {
         Pane pane = new Pane();
         pane.setMinSize(ICON_SIZE, ICON_SIZE);
@@ -278,6 +304,7 @@ public class VideoPlayerView {
     }
 
     // Simple two vertical bars 'pause' icon.
+    // Draws two vertical pause bars on a Canvas.
     private Canvas createPauseIcon() {
         Canvas canvas = new Canvas(ICON_SIZE, ICON_SIZE);
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -288,6 +315,7 @@ public class VideoPlayerView {
     }
 
     // Simple right facing equilateral triangle 'play' icon.
+    // Draws the triangular play symbol on a Canvas.
     private Canvas createPlayIcon() {
         Canvas canvas = new Canvas(ICON_SIZE, ICON_SIZE);
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -300,6 +328,7 @@ public class VideoPlayerView {
     }
 
     // Simple square 'stop' icon.
+    // Draws the square stop symbol on a Canvas.
     private Canvas createStopIcon() {
         Canvas canvas = new Canvas(ICON_SIZE, ICON_SIZE);
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -309,6 +338,7 @@ public class VideoPlayerView {
     }
 
     // Kind of speaker looking thing ...
+    // Draws the speaker icon with sound waves or a mute cross.
     private Node createAudioIcon(boolean audioEnabled) {
         Pane pane = new Pane();
         pane.setMinSize(ICON_SIZE, ICON_SIZE);
@@ -339,6 +369,7 @@ public class VideoPlayerView {
     }
 
     // Little helper for different radius waves coming out of the speaker.
+    // Creates a curved SVG path for a sound wave.
     private SVGPath audioWave(String content) {
         SVGPath wave = new SVGPath();
         wave.setContent(content);
@@ -350,6 +381,7 @@ public class VideoPlayerView {
     }
 
     // Helper to draw a cross over the speaker indicating that we're muted.
+    // Creates a line used to draw the muted speaker symbol.
     private Line audioLine(double startX, double startY, double endX, double endY) {
         Line line = new Line(startX, startY, endX, endY);
         line.setStroke(Color.BLACK);

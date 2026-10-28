@@ -10,6 +10,7 @@
  */
 package comp3011;
 
+// Metadata for one decoded frame: its sequence number and timestamp in microseconds.
 public record InfoFrame(
         int frameNumber,
         long timestampUs) {

@@ -25,21 +25,26 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameVignetter extends FrameProcessor {
+    // Defines how dark the edges should become.
     private static final double EDGE_FADE_PERCENTAGE = 40.0;
 
+    // Reusable horizontal and vertical brightness conversion tables.
     private byte[][] xLookups;
     private byte[][] yLookups;
 
+    // Creates an effect that darkens the edges of each frame.
     public FrameVignetter() {
         super();
     }
 
+    // Precalculates brightness lookup tables based on image size.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
         buildLookups();
     }
 
+    // Checks the frame format before applying the vignette.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -61,11 +66,14 @@ public class FrameVignetter extends FrameProcessor {
         vignetteFrame(pixels);
     }
 
+    // Generates separate lookup tables for horizontal and vertical fading.
     private void buildLookups() {
+        // Horizontal and vertical fades combine to darken all four edges.
         xLookups = buildAxisLookups(videoInfo.imageWidth());
         yLookups = buildAxisLookups(videoInfo.imageHeight());
     }
 
+    // Builds a brightness conversion table for every position along one axis.
     private byte[][] buildAxisLookups(int size) {
         byte[][] lookups = new byte[size][256];
         double[] envelope = buildGaussianEnvelope(size);
@@ -82,6 +90,7 @@ public class FrameVignetter extends FrameProcessor {
         return lookups;
     }
 
+    // Uses a bell-shaped curve to fade from the centre toward the edges.
     private double[] buildGaussianEnvelope(int size) {
         double[] envelope = new double[size];
         if (size <= 0) {
@@ -115,6 +124,7 @@ public class FrameVignetter extends FrameProcessor {
         return envelope;
     }
 
+    // Applies horizontal and vertical fading to each pixel.
     private void vignetteFrame(ByteBuffer pixels) {
         int height = videoInfo.imageHeight();
         int width = videoInfo.imageWidth();
@@ -139,10 +149,12 @@ public class FrameVignetter extends FrameProcessor {
         }
     }
 
+    // Restricts values to their expected range.
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Restricts values to their expected range.
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(value, max));
     }

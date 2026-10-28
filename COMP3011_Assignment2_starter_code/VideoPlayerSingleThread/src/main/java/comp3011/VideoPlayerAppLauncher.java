@@ -24,6 +24,7 @@ package comp3011;
  */
 public class VideoPlayerAppLauncher {
 
+    // Provides a normal Java main method for the packaged JavaFX application.
     public static void main(String[] args) {
         VideoPlayerApp.main(args);
     }

@@ -36,14 +36,17 @@ public class AudioPlayer implements AutoCloseable {
     private static final long WRITE_TRACE_THRESHOLD_NS = 2_000_000L;
     private static final int AUDIO_WARMUP_BYTES = 4096;
 
+    // The current output device and a reusable array for audio conversion.
     private SourceDataLine line; // Java Sound's audio-output interface - for us a destination, not a source.
     private byte[] outputBuffer = new byte[0];
 
+    // Sets up a 16-bit PCM audio output line using the sample rate and channel count from the video.
     public void open(int sampleRate, int channels) throws LineUnavailableException {
         if (sampleRate <= 0 || channels <= 0) {
             return;
         }
 
+        // Java Sound needs a compatible output line; an unsupported device causes an exception here.
         AudioFormat format = new AudioFormat(sampleRate, 16, channels, true, false);
         line = AudioSystem.getSourceDataLine(format);
         line.open(format);
@@ -51,6 +54,7 @@ public class AudioPlayer implements AutoCloseable {
         warmUpLine();
     }
 
+    // Copies decoded audio from a JavaCV frame so the player can queue the bytes safely.
     public byte[] copySamples(Frame frame) {
         if (frame.samples == null || frame.samples.length == 0) {
             return new byte[0];
@@ -66,6 +70,7 @@ public class AudioPlayer implements AutoCloseable {
         return samples;
     }
 
+    // Writes only as many bytes as the sound device can accept without filling its buffer.
     public int write(byte[] samples, int offset, int length) {
         if (line == null || samples.length == 0 || length <= 0) {
             return 0;
@@ -75,6 +80,7 @@ public class AudioPlayer implements AutoCloseable {
         // available. We return only the bytes we were able to write without overflowing the buffer, so the remaining
         // bytes can be tracked and written later. This avoids audio buffer blocking in a cooperative multitasking
         // architecture - i.e. we are being cooperative and not stalling the thread on line.write below!
+        // Only write bytes that will fit now, rather than blocking the GUI thread.
         int availableBeforeWrite = line.available();
         int byteCount = Math.min(length, availableBeforeWrite);
         if (byteCount <= 0) {
@@ -95,12 +101,14 @@ public class AudioPlayer implements AutoCloseable {
         return written;
     }
 
+    // Discards queued audio when playback pauses or seeks.
     public void flush() {
         if (line != null) {
             line.flush();
         }
     }
 
+    // Stops and releases the operating system audio line.
     @Override
     public void close() {
         if (line != null) {
@@ -116,6 +124,7 @@ public class AudioPlayer implements AutoCloseable {
     // noticeable lag between the vision and the audio. This method writes a bunch of silence into the audio system
     // then flushes it out as soon as it is written to get any wake up lag out of the way, so that it is hopefully ready
     // for real time output when the real audio bytes start showing up.
+    // Sends a short silent sample to avoid a large delay when real sound starts.
     private void warmUpLine() {
         byte[] silence = new byte[Math.min(AUDIO_WARMUP_BYTES, line.getBufferSize())]; // All zeros.
         line.write(silence, 0, silence.length); // May play, but harmless.
@@ -124,6 +133,7 @@ public class AudioPlayer implements AutoCloseable {
 
     // This is a little tedious but handles channel interleaved stereo audio (normal) and also 'packed' audio where
     // there is a chunk of left speaker followed by a chunk of right speaker (unusual, and needs conversion).
+    // Handles both separate-channel and interleaved 16-bit audio buffers.
     private int copySamplesToOutputBuffer(Frame frame) {
         Buffer[] samples = frame.samples;
         int channels = frame.audioChannels;
@@ -153,6 +163,7 @@ public class AudioPlayer implements AutoCloseable {
         return 0;
     }
 
+    // Converts 16-bit samples to little-endian bytes in their existing order.
     private int copyPackedSamples(ShortBuffer source) {
         int outputIndex = 0;
         while (source.hasRemaining()) {
@@ -163,6 +174,7 @@ public class AudioPlayer implements AutoCloseable {
         return outputIndex;
     }
 
+    // Interleaves separate channel buffers so stereo samples alternate correctly.
     private int copyPlanarSamples(ShortBuffer[] planarSamples, int sampleCount) {
         int outputIndex = 0;
         for (int sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
@@ -175,6 +187,7 @@ public class AudioPlayer implements AutoCloseable {
         return outputIndex;
     }
 
+    // Reuses the temporary byte array unless a larger one is needed.
     private void ensureOutputBufferCapacity(int byteCount) {
         if (outputBuffer.length < byteCount) {
             outputBuffer = new byte[byteCount];

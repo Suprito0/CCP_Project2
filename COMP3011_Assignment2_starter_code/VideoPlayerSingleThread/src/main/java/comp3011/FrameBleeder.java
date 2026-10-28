@@ -25,6 +25,7 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameBleeder extends FrameProcessor {
+    // A small mask makes the blur cheaper than working at full image resolution.
     private static final int MASK_BLOCK_SIZE = 4;
     private static final int BLUR_RADIUS = 3;
     private static final int BLEED_LUMINANCE_THRESHOLD = 150;
@@ -34,6 +35,7 @@ public class FrameBleeder extends FrameProcessor {
     private static final double GREEN_BLEED_STRENGTH = 62.0;
     private static final double BLUE_BLEED_STRENGTH = 18.0;
 
+    // Reusable brightness masks and interpolation tables for the current video.
     private int maskWidth;
     private int maskHeight;
     private double[] brightMask;
@@ -44,10 +46,12 @@ public class FrameBleeder extends FrameProcessor {
     private int[] yMaskTop;
     private double[] yMaskBlend;
 
+    // Creates the bright-light bleeding effect.
     public FrameBleeder() {
         super();
     }
 
+    // Allocates the reduced-resolution brightness masks and pixel-sampling tables.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
@@ -60,6 +64,7 @@ public class FrameBleeder extends FrameProcessor {
         buildSamplingLookups();
     }
 
+    // Validates the frame, builds a mask of bright spots, blurs it and adds the glow.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -78,11 +83,13 @@ public class FrameBleeder extends FrameProcessor {
             throw new Exception("FrameBleeder requires at least three image channels");
         }
 
+        // Three stages: detect light, spread it and blend the light back into the image.
         buildBrightMask(pixels);
         blurBrightMask();
         applyBleed(pixels);
     }
 
+    // Precalculates where each image pixel falls in the smaller mask.
     private void buildSamplingLookups() {
         xMaskLeft = new int[videoInfo.imageWidth()];
         xMaskBlend = new double[videoInfo.imageWidth()];
@@ -93,6 +100,7 @@ public class FrameBleeder extends FrameProcessor {
         buildAxisSamplingLookups(videoInfo.imageHeight(), maskHeight, yMaskTop, yMaskBlend);
     }
 
+    // Stores the neighbouring mask cells and interpolation amount for one axis.
     private void buildAxisSamplingLookups(int imageSize, int maskSize, int[] maskStarts, double[] maskBlends) {
         if (imageSize <= 1 || maskSize <= 1) {
             for (int position = 0; position < imageSize; position++) {
@@ -117,6 +125,7 @@ public class FrameBleeder extends FrameProcessor {
         }
     }
 
+    // Finds the brightest pixel in each block instead of processing a full-size mask.
     private void buildBrightMask(ByteBuffer pixels) {
         int width = videoInfo.imageWidth();
         int height = videoInfo.imageHeight();
@@ -145,11 +154,13 @@ public class FrameBleeder extends FrameProcessor {
                     }
                 }
 
+                // Store one brightness value for the whole image block.
                 brightMask[maskY * maskWidth + maskX] = thresholdedBrightness(maximumLuminance);
             }
         }
     }
 
+    // Ignores dark regions and converts bright values to a weighted glow strength.
     private double thresholdedBrightness(int luminance) {
         if (luminance <= BLEED_LUMINANCE_THRESHOLD) {
             return 0.0;
@@ -159,11 +170,13 @@ public class FrameBleeder extends FrameProcessor {
         return Math.pow(normalised, BLEED_GAMMA);
     }
 
+    // Blurs in two passes, which is cheaper than a full two-dimensional blur.
     private void blurBrightMask() {
         blurHorizontally(brightMask, horizontalBlurMask);
         blurVertically(horizontalBlurMask, blurredMask);
     }
 
+    // Averages nearby mask values across each row.
     private void blurHorizontally(double[] source, double[] destination) {
         for (int y = 0; y < maskHeight; y++) {
             int rowStart = y * maskWidth;
@@ -182,6 +195,7 @@ public class FrameBleeder extends FrameProcessor {
         }
     }
 
+    // Averages nearby mask values up and down each column.
     private void blurVertically(double[] source, double[] destination) {
         for (int y = 0; y < maskHeight; y++) {
             for (int x = 0; x < maskWidth; x++) {
@@ -199,6 +213,7 @@ public class FrameBleeder extends FrameProcessor {
         }
     }
 
+    // Adds a stronger red glow, a smaller green glow and a little blue glow.
     private void applyBleed(ByteBuffer pixels) {
         int width = videoInfo.imageWidth();
         int height = videoInfo.imageHeight();
@@ -226,6 +241,7 @@ public class FrameBleeder extends FrameProcessor {
         }
     }
 
+    // Interpolates the lower-resolution mask to find the glow at an image pixel.
     private double sampleBlurredMask(int x, int y) {
         int x0 = xMaskLeft[x];
         int x1 = Math.min(x0 + 1, maskWidth - 1);
@@ -240,18 +256,22 @@ public class FrameBleeder extends FrameProcessor {
         return Math.min(1.0, lerp(top, bottom, yBlend) * BLEED_MASK_GAIN);
     }
 
+    // Adds brightness to one colour byte, stopping at the maximum value of 255.
     private byte boostedByte(byte value, int boost) {
         return (byte) Math.min(255, Byte.toUnsignedInt(value) + boost);
     }
 
+    // Keeps a number inside the given minimum and maximum.
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Keeps a number inside the given minimum and maximum.
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Interpolates between two values using a blend amount from zero to one.
     private double lerp(double a, double b, double blend) {
         return a + (b - a) * blend;
     }

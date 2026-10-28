@@ -26,24 +26,29 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameFlickerer extends FrameProcessor {
+    // Controls the typical amount of brightness variation.
     private static final double FLICKER_PERCENTAGE_SD = 5.0;
 
+    // Distinguishes repeated copies of this effect.
     private static int nextInstanceIndex;
 
     private final int instanceIndex;
     private int mediaSeed;
 
+    // Gives each flicker effect its own repeatable random sequence.
     public FrameFlickerer() {
         super();
         instanceIndex = nextInstanceIndex++;
     }
 
+    // Builds the seed used to choose brightness for each frame.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
         mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex);
     }
 
+    // Chooses a slight random dimming amount for the current frame.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -62,6 +67,7 @@ public class FrameFlickerer extends FrameProcessor {
             throw new Exception("FrameFlickerer requires at least one image channel");
         }
 
+        // The same media and frame always produce the same flicker amount.
         Random random = new Random((long) mediaSeed + info.frameNumber());
         double dimmingPercentage = Math.abs(random.nextGaussian()) * FLICKER_PERCENTAGE_SD;
         double brightnessScale = Math.max(0.0, 100.0 - dimmingPercentage) / 100.0;
@@ -69,6 +75,7 @@ public class FrameFlickerer extends FrameProcessor {
         dimFrame(pixels, brightnessScale);
     }
 
+    // Uses a 256-entry lookup table to darken every byte efficiently.
     private void dimFrame(ByteBuffer pixels, double brightnessScale) {
         byte[] dimLookup = new byte[256];
         for (int value = 0; value < dimLookup.length; value++) {
@@ -88,6 +95,7 @@ public class FrameFlickerer extends FrameProcessor {
         }
     }
 
+    // Prevents brightness values from falling outside the 0-255 range.
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }

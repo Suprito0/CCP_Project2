@@ -31,14 +31,17 @@ import javafx.stage.Stage;
  * </p>
  */
 public class VideoPlayerApp extends Application {
+    // Read at startup and shared with the JavaFX Application instance.
     private static CommandLineController commandLineController;
 
+    // Owns the controller and tracks video and screen dimensions.
     private VideoPlayerController controller;
     private Stage stage;
     private Rectangle2D selectedScreenBounds;
     private int videoWidth;
     private int videoHeight;
 
+    // Builds the player window, connects the controller and begins playing the chosen video.
     @Override
     public void start(Stage stage) {
         this.stage = stage;
@@ -47,6 +50,7 @@ public class VideoPlayerApp extends Application {
                 commandLineController.isAudioRequested(),
                 this::setVideoSize);
 
+        // Only the JavaFX thread should make changes to the visible scene graph.
         Scene scene = new Scene(controller.getView().getRoot());
         controller.installKeyboardShortcuts(scene);
 
@@ -63,6 +67,7 @@ public class VideoPlayerApp extends Application {
         playVideo();
     }
 
+    // Selects the requested monitor, or uses a secondary monitor when available.
     private void moveToSelectedScreen(Stage stage) {
         List<Screen> screens = Screen.getScreens();
         Integer displayId = commandLineController.getDisplayId();
@@ -86,16 +91,19 @@ public class VideoPlayerApp extends Application {
         stage.setY(bounds.getMinY());
     }
 
+    // Passes the selected video file to the controller.
     private void playVideo() {
         controller.play(commandLineController.getVideoFile());
     }
 
+    // Stores video dimensions and asks the window to resize.
     private void setVideoSize(int width, int height) {
         videoWidth = width;
         videoHeight = height;
         updateVideoSize();
     }
 
+    // Adjusts the displayed image size for monitor scaling and window state.
     private void updateVideoSize() {
         if (videoWidth <= 0 || videoHeight <= 0) {
             return;
@@ -121,6 +129,7 @@ public class VideoPlayerApp extends Application {
         }
     }
 
+    // Keeps the non-maximised window positioned inside the selected display.
     private void alignSceneToSelectedScreen() {
         if (selectedScreenBounds == null || stage.getScene() == null) {
             return;
@@ -130,6 +139,7 @@ public class VideoPlayerApp extends Application {
         stage.setY(selectedScreenBounds.getMinY() - stage.getScene().getY());
     }
 
+    // Releases playback resources when JavaFX shuts down.
     @Override
     public void stop() {
         if (controller != null) {
@@ -138,6 +148,7 @@ public class VideoPlayerApp extends Application {
     }
 
     // Entry point.
+    // Validates launch arguments before starting the JavaFX application.
     public static void main(String[] args) {
         commandLineController = new CommandLineController(args);
 

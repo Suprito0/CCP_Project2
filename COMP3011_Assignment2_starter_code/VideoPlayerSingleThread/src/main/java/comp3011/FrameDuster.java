@@ -23,6 +23,7 @@ import org.bytedeco.javacv.Frame;
  * draws each curved mark as a series of softly darkened points.</p>
  */
 public class FrameDuster extends FrameProcessor {
+    // Controls how often marks appear and how their shape looks.
     private static final double DUST_MARKS_PER_SECOND = 20.0;
     private static final double MIN_DUST_LENGTH_PERCENTAGE = 1.0;
     private static final double MAX_DUST_LENGTH_PERCENTAGE = 8.0;
@@ -37,22 +38,26 @@ public class FrameDuster extends FrameProcessor {
     private static final double UNIFORM_ANGLE_PROBABILITY = 0.18;
     private static final int SEED_SALT = 0x44555354;
 
+    // Different instances get different seeds, even for the same movie.
     private static int nextInstanceIndex;
 
     private final int instanceIndex;
     private int mediaSeed;
 
+    // Gives this dust effect its own instance index so repeated effects differ.
     public FrameDuster() {
         super();
         instanceIndex = nextInstanceIndex++;
     }
 
+    // Builds a repeatable random seed from the video name and effect instance.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
         mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
     }
 
+    // Chooses how many dust marks to draw on this frame using a seeded random generator.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -75,6 +80,7 @@ public class FrameDuster extends FrameProcessor {
             return;
         }
 
+        // Using frame number in the seed makes the effect reproducible when seeking.
         Random random = new Random((long) mediaSeed + info.frameNumber());
         int markCount = nextPoisson(random, dustMarksPerFrame());
         for (int mark = 0; mark < markCount; mark++) {
@@ -82,6 +88,7 @@ public class FrameDuster extends FrameProcessor {
         }
     }
 
+    // Converts the configured number of marks per second into marks per video frame.
     private double dustMarksPerFrame() {
         if (videoInfo.frameRate() <= 0.0) {
             return DUST_MARKS_PER_SECOND / Math.max(1, videoInfo.intFrameRate());
@@ -89,6 +96,7 @@ public class FrameDuster extends FrameProcessor {
         return DUST_MARKS_PER_SECOND / videoInfo.frameRate();
     }
 
+    // Samples a Poisson distribution to vary how many marks appear.
     private int nextPoisson(Random random, double mean) {
         double stopThreshold = Math.exp(-mean);
         double product = 1.0;
@@ -102,6 +110,7 @@ public class FrameDuster extends FrameProcessor {
         return count - 1;
     }
 
+    // Picks a curved hair/dust shape and draws small dark points along it.
     private void drawRandomDustMark(ByteBuffer pixels, Random random) {
         double length = randomLength(random);
         double angle = randomAngle(random);
@@ -135,11 +144,13 @@ public class FrameDuster extends FrameProcessor {
         }
     }
 
+    // Chooses a dust-mark length within the configured size range.
     private double randomLength(Random random) {
         double percentage = randomBetween(random, MIN_DUST_LENGTH_PERCENTAGE, MAX_DUST_LENGTH_PERCENTAGE);
         return videoInfo.imageWidth() * percentage / 100.0;
     }
 
+    // Usually chooses near-vertical dust marks, with some random orientations.
     private double randomAngle(Random random) {
         if (random.nextDouble() < UNIFORM_ANGLE_PROBABILITY) {
             return random.nextDouble() * 2.0 * Math.PI;
@@ -149,14 +160,17 @@ public class FrameDuster extends FrameProcessor {
         return verticalAxis + random.nextGaussian() * VERTICAL_ANGLE_SD_RADIANS;
     }
 
+    // Returns a random value that can be positive or negative.
     private double signedRandom(Random random) {
         return random.nextDouble() * 2.0 - 1.0;
     }
 
+    // Returns a random double in the requested range.
     private double randomBetween(Random random, double min, double max) {
         return min + random.nextDouble() * (max - min);
     }
 
+    // Calculates one point on a smooth Bezier curve.
     private double cubicBezier(double p0, double p1, double p2, double p3, double t) {
         double u = 1.0 - t;
         return u * u * u * p0
@@ -165,6 +179,7 @@ public class FrameDuster extends FrameProcessor {
                 + t * t * t * p3;
     }
 
+    // Draws a small feathered mark by darkening surrounding pixels.
     private void drawSoftDarkPoint(ByteBuffer pixels, double centreX, double centreY, double radius, double opacity) {
         int minX = clamp((int) Math.floor(centreX - radius), 0, videoInfo.imageWidth() - 1);
         int maxX = clamp((int) Math.ceil(centreX + radius), 0, videoInfo.imageWidth() - 1);
@@ -186,6 +201,7 @@ public class FrameDuster extends FrameProcessor {
         }
     }
 
+    // Reduces pixel brightness according to the requested opacity.
     private void darkenPixel(ByteBuffer pixels, int x, int y, double alpha) {
         int base = y * videoInfo.imageStride() + x * videoInfo.imageChannels();
         double scale = 1.0 - alpha;
@@ -196,6 +212,7 @@ public class FrameDuster extends FrameProcessor {
         }
     }
 
+    // Limits a value to the provided range.
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }

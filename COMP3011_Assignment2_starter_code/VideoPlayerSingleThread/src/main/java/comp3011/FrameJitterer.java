@@ -27,20 +27,24 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameJitterer extends FrameProcessor {
+    // The salt makes jitter randomness different from other visual effects.
     private static final int SEED_SALT = 0x4a495454;
 
     private static int nextInstanceIndex;
 
     private final int instanceIndex;
     private int mediaSeed;
+    // Reused during pixel movement so pixels are not overwritten while shifting.
     private byte[] sourcePixels;
     private byte[] blackRow;
 
+    // Tracks a unique instance of the frame-shifting effect.
     public FrameJitterer() {
         super();
         instanceIndex = nextInstanceIndex++;
     }
 
+    // Allocates reusable buffers for moving pixels and clearing exposed edges.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
@@ -52,6 +56,7 @@ public class FrameJitterer extends FrameProcessor {
         blackRow = new byte[widthBytes];
     }
 
+    // Chooses horizontal and vertical frame offsets using deterministic randomness.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -70,6 +75,7 @@ public class FrameJitterer extends FrameProcessor {
             throw new Exception("FrameJitterer requires at least one image channel");
         }
 
+        // A deterministic seed means a seek back to this frame repeats the same shift.
         Random random = new Random(seedForFrame(info.frameNumber()));
         int yOffset = chooseVerticalOffset(random);
         int xOffset = chooseHorizontalOffset(random);
@@ -81,6 +87,7 @@ public class FrameJitterer extends FrameProcessor {
         jitterFrame(pixels, xOffset, yOffset);
     }
 
+    // Mixes the media seed and frame number to produce a repeatable random offset.
     private long seedForFrame(int frameNumber) {
         long seed = Integer.toUnsignedLong(mediaSeed) + Integer.toUnsignedLong(frameNumber);
 
@@ -94,6 +101,7 @@ public class FrameJitterer extends FrameProcessor {
         return seed;
     }
 
+    // Usually keeps the frame steady and occasionally moves it up or down.
     private int chooseVerticalOffset(Random random) {
         double sample = random.nextDouble();
         if (sample < 0.02) {
@@ -111,6 +119,7 @@ public class FrameJitterer extends FrameProcessor {
         return 2;
     }
 
+    // Chooses a small horizontal shift for the current frame.
     private int chooseHorizontalOffset(Random random) {
         double sample = random.nextDouble();
         if (sample < 0.02) {
@@ -122,6 +131,7 @@ public class FrameJitterer extends FrameProcessor {
         return 1;
     }
 
+    // Copies the original pixels, shifts them and fills any uncovered area with black.
     private void jitterFrame(ByteBuffer pixels, int xOffset, int yOffset) {
         int height = videoInfo.imageHeight();
         int width = videoInfo.imageWidth();

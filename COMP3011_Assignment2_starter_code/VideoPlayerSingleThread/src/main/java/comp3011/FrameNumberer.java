@@ -27,11 +27,13 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameNumberer extends FrameProcessor {
+    // Size and spacing of the tiny seven-segment digits.
     private static final int TILE_WIDTH = 5;
     private static final int TILE_HEIGHT = 7;
     private static final int TILE_SPACING = 1;
     private static final int MARGIN = 1;
 
+    // Bit flags identify which segments must be drawn for each digit.
     private static final int TOP = 1;
     private static final int UPPER_LEFT = 2;
     private static final int UPPER_RIGHT = 4;
@@ -54,9 +56,11 @@ public class FrameNumberer extends FrameProcessor {
             /* 9 */ TOP | UPPER_LEFT | UPPER_RIGHT | MIDDLE | LOWER_RIGHT | BOTTOM
     };
 
+    // Creates an effect that draws the decoded frame number over the picture.
     public FrameNumberer() {
     }
 
+    // Checks the image and positions the small number in the bottom-right corner.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -75,6 +79,7 @@ public class FrameNumberer extends FrameProcessor {
             throw new Exception("FrameNumberer requires at least one image channel");
         }
 
+        // Convert the frame number into digits before rendering the seven-segment shapes.
         String text = Integer.toString(Math.max(0, info.frameNumber()));
         int textWidth = text.length() * TILE_WIDTH + (text.length() - 1) * TILE_SPACING;
         int textHeight = TILE_HEIGHT;
@@ -95,6 +100,7 @@ public class FrameNumberer extends FrameProcessor {
         }
     }
 
+    // Turns a decimal digit into the seven line segments used to draw it.
     private void drawDigit(ByteBuffer pixels, int tileX, int tileY, int digit) {
         int segments = DIGIT_SEGMENTS[digit];
 
@@ -114,12 +120,14 @@ public class FrameNumberer extends FrameProcessor {
             drawHorizontalSegment(pixels, tileX, tileY, 5);
     }
 
+    // Draws one horizontal line of a digit.
     private void drawHorizontalSegment(ByteBuffer pixels, int tileX, int tileY, int y) {
         setPixel(pixels, tileX + 1, tileY + y, 255);
         setPixel(pixels, tileX + 2, tileY + y, 255);
         setPixel(pixels, tileX + 3, tileY + y, 255);
     }
 
+    // Draws one vertical line of a digit.
     private void drawVerticalSegment(ByteBuffer pixels, int tileX, int tileY, int x, int y) {
         setPixel(pixels, tileX + x, tileY + y, 255);
         setPixel(pixels, tileX + x, tileY + y + 1, 255);
@@ -140,6 +148,7 @@ public class FrameNumberer extends FrameProcessor {
         }
     }
 
+    // Writes a pixel only when its coordinates are inside the video image.
     private void setPixel(ByteBuffer pixels, int x, int y, int value) {
         int base = y * videoInfo.imageStride() + x * videoInfo.imageChannels();
         byte byteValue = (byte) value;

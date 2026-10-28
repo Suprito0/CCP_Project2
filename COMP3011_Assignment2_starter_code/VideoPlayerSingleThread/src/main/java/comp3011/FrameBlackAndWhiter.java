@@ -25,10 +25,12 @@ import org.bytedeco.javacv.Frame;
  */
 public class FrameBlackAndWhiter extends FrameProcessor {
 
+    // Creates an effect that replaces colour pixels with shades of grey.
     public FrameBlackAndWhiter() {
         super();
     }
 
+    // Checks that the frame is an 8-bit image with enough channels to calculate greyscale.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -50,6 +52,7 @@ public class FrameBlackAndWhiter extends FrameProcessor {
         convertFrame(pixels);
     }
 
+    // Calculates luminance from BGR and writes the same grey value into each channel.
     private void convertFrame(ByteBuffer pixels) {
         int height = videoInfo.imageHeight();
         int width = videoInfo.imageWidth();
@@ -60,6 +63,7 @@ public class FrameBlackAndWhiter extends FrameProcessor {
             int rowStart = y * stride;
             for (int x = 0; x < width; x++) {
                 int base = rowStart + x * channels;
+                // Each BGR channel contributes differently to perceived brightness.
                 // JavaCV supplies these decoded frames in BGR byte order.
                 int b = Byte.toUnsignedInt(pixels.get(base));
                 int g = Byte.toUnsignedInt(pixels.get(base + 1));

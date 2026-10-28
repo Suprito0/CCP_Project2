@@ -10,6 +10,7 @@
  */
 package comp3011;
 
+// Metadata shared by effects, including dimensions, pixel format and frame rate.
 public record InfoVideo(
         String mediaName,
         int totalVideoFrames,

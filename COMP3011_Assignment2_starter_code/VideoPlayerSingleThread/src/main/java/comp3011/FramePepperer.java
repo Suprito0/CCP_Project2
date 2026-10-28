@@ -27,6 +27,7 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FramePepperer extends FrameProcessor {
+    // Configuration for the number, size, transparency and shape of film spots.
     private static final double PEPPER_MARKS_PER_SECOND = 10.0;
     private static final double MIN_PEPPER_SIZE_PERCENTAGE = 0.25;
     private static final double MAX_PEPPER_SIZE_PERCENTAGE = 2.5;
@@ -41,22 +42,26 @@ public class FramePepperer extends FrameProcessor {
     private static final double MAX_BOUNDARY_WARP = 0.22;
     private static final int SEED_SALT = 0x50455050;
 
+    // Each instance keeps its own deterministic random sequence.
     private static int nextInstanceIndex;
 
     private final int instanceIndex;
     private int mediaSeed;
 
+    // Creates a separate random sequence for this dark-blotch effect.
     public FramePepperer() {
         super();
         instanceIndex = nextInstanceIndex++;
     }
 
+    // Builds a repeatable seed using the video name and effect number.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
         mediaSeed = saltedMediaSeed(videoInfo.mediaName(), instanceIndex + SEED_SALT);
     }
 
+    // Chooses a number of random spots and draws them on the current frame.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -79,6 +84,7 @@ public class FramePepperer extends FrameProcessor {
             return;
         }
 
+        // Random spots are repeatable for the same video frame.
         Random random = new Random(seedForFrame(info.frameNumber()));
         int markCount = nextPoisson(random, pepperMarksPerFrame());
         for (int mark = 0; mark < markCount; mark++) {
@@ -86,6 +92,7 @@ public class FramePepperer extends FrameProcessor {
         }
     }
 
+    // Converts spots per second to the expected number per frame.
     private double pepperMarksPerFrame() {
         if (videoInfo.frameRate() <= 0.0) {
             return PEPPER_MARKS_PER_SECOND / Math.max(1, videoInfo.intFrameRate());
@@ -93,6 +100,7 @@ public class FramePepperer extends FrameProcessor {
         return PEPPER_MARKS_PER_SECOND / videoInfo.frameRate();
     }
 
+    // Mixes the frame number into the seed so adjacent frames look different.
     private long seedForFrame(int frameNumber) {
         long seed = Integer.toUnsignedLong(mediaSeed) + Integer.toUnsignedLong(frameNumber);
 
@@ -104,6 +112,7 @@ public class FramePepperer extends FrameProcessor {
         return seed;
     }
 
+    // Chooses a random mark count around the expected average.
     private int nextPoisson(Random random, double mean) {
         double stopThreshold = Math.exp(-mean);
         double product = 1.0;
@@ -117,6 +126,7 @@ public class FramePepperer extends FrameProcessor {
         return count - 1;
     }
 
+    // Chooses the spot size, shape, opacity and position before drawing.
     private void drawRandomPepperMark(ByteBuffer pixels, Random random) {
         double baseSize = randomSize(random);
         double aspectRatio = randomBetween(random, 1.0, MAX_ASPECT_RATIO);
@@ -155,11 +165,13 @@ public class FramePepperer extends FrameProcessor {
                 shape);
     }
 
+    // Calculates a spot radius based on a percentage of the video width.
     private double randomSize(Random random) {
         double percentage = randomBetween(random, MIN_PEPPER_SIZE_PERCENTAGE, MAX_PEPPER_SIZE_PERCENTAGE);
         return videoInfo.imageWidth() * percentage / 100.0;
     }
 
+    // Creates random parameters that make the spot boundary uneven.
     private PepperShape randomPepperShape(Random random) {
         return new PepperShape(
                 random.nextDouble() * 2.0 * Math.PI,
@@ -170,6 +182,7 @@ public class FramePepperer extends FrameProcessor {
                 randomBetween(random, -MAX_BOUNDARY_WARP, MAX_BOUNDARY_WARP));
     }
 
+    // Finds pixels inside a rotated, irregular ellipse and darkens them.
     private void drawPepperShape(
             ByteBuffer pixels,
             double centreX,
@@ -211,6 +224,7 @@ public class FramePepperer extends FrameProcessor {
         }
     }
 
+    // Reduces the brightness of each colour channel at one pixel.
     private void darkenPixel(ByteBuffer pixels, int x, int y, double alpha) {
         int base = y * videoInfo.imageStride() + x * videoInfo.imageChannels();
         double scale = 1.0 - alpha;
@@ -221,23 +235,28 @@ public class FramePepperer extends FrameProcessor {
         }
     }
 
+    // Picks a decimal number within a given range.
     private double randomBetween(Random random, double min, double max) {
         return min + random.nextDouble() * (max - min);
     }
 
+    // Smooths the edge fade so a spot is not a hard-edged circle.
     private double smoothstep(double value) {
         value = clamp(value, 0.0, 1.0);
         return value * value * (3.0 - 2.0 * value);
     }
 
+    // Keeps a value inside the allowed limits.
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Keeps a value inside the allowed limits.
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Stores the coefficients that control the spot outline.
     private record PepperShape(
             double phase2,
             double phase3,
@@ -246,6 +265,7 @@ public class FramePepperer extends FrameProcessor {
             double harmonic3,
             double harmonic5) {
 
+        // Calculates how much the outline grows or shrinks at an angle.
         private double radiusScale(double angle) {
             double scale = 1.0
                     + harmonic2 * Math.sin(2.0 * angle + phase2)

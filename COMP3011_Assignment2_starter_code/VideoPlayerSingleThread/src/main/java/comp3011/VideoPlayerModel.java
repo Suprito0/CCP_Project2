@@ -39,10 +39,12 @@ import javafx.scene.image.Image;
  * </p>
  */
 public class VideoPlayerModel {
+    // Time values are stored in microseconds (us) or nanoseconds (ns).
     private static final long NO_SEEK_REQUEST = -1; // Sentinel value used when no seek position is active.
     private static final long FIVE_SECONDS_US = 5_000_000L;
     private static final long AUDIO_LEAD_NS = 30_000_000L;
 
+    // Effects, queued audio and controller callbacks are kept here.
     private final List<FrameProcessor> frameProcessors;
     private final Queue<PendingAudio> pendingAudio = new ArrayDeque<>();
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
@@ -62,10 +64,12 @@ public class VideoPlayerModel {
     private final AnimationTimer playbackTimer = new AnimationTimer() {
         @Override
         public void handle(long now) {
+            // This work happens on the JavaFX GUI thread in the starter implementation.
             pumpPlayback(now);
         }
     };
 
+    // Playback state and timing information for the current video.
     private File videoFile; // Path to the media that comes from the command line
     private FFmpegFrameGrabber grabber; // This is the 3rd party video media decoder. It deals in JavaCV Frame objects.
     private JavaFXFrameConverter converter; // Takes Frame objects to JavaFX Image objects, which can be put on screen.
@@ -89,6 +93,7 @@ public class VideoPlayerModel {
     private long pauseStartedNs;
     private long relativeSeekBaseUs = NO_SEEK_REQUEST;
 
+    // Stores the playback callbacks and the list of available visual effects.
     public VideoPlayerModel(
             boolean audioEnabled,
             BiConsumer<Integer, Integer> videoSizeChangedHandler,
@@ -115,6 +120,7 @@ public class VideoPlayerModel {
 //        frameProcessors.add(new FrameNumberer());
     }
 
+    // Stores the selected file, clears previous timing and starts playback from zero.
     public void play(File file) {
         videoFile = file;
         videoDurationUs = NO_SEEK_REQUEST;
@@ -122,6 +128,7 @@ public class VideoPlayerModel {
         startPlayback(0, false, NO_SEEK_REQUEST);
     }
 
+    // Seeks back to the beginning of the video.
     public void startOver() {
         if (videoFile == null) {
             return;
@@ -130,14 +137,17 @@ public class VideoPlayerModel {
         seekTo(0);
     }
 
+    // Moves five seconds backward from the current position.
     public void backFiveSeconds() {
         seekRelative(-FIVE_SECONDS_US);
     }
 
+    // Moves five seconds forward from the current position.
     public void forwardFiveSeconds() {
         seekRelative(FIVE_SECONDS_US);
     }
 
+    // Pauses/resumes the playback clock, or restarts playback when finished.
     public void togglePause() {
         if (!playbackOpen) {
             if (videoFile != null) {
@@ -159,6 +169,7 @@ public class VideoPlayerModel {
         notifyPlaybackStateChanged();
     }
 
+    // Changes the mute flag and clears audio that was already queued.
     public void toggleAudioOutput() {
         audioOutputEnabled = !audioOutputEnabled;
         pendingAudio.clear();
@@ -166,10 +177,12 @@ public class VideoPlayerModel {
         notifyAudioOutputStateChanged();
     }
 
+    // Returns the current audio-output setting.
     public boolean isAudioOutputEnabled() {
         return audioOutputEnabled;
     }
 
+    // Closes playback and clears the displayed frame.
     public void stopPlayback() {
         closePlaybackResources();
         currentTimestampUs = 0;
@@ -179,10 +192,12 @@ public class VideoPlayerModel {
         notifyPlaybackStateChanged();
     }
 
+    // Releases the decoder, audio device and converter when the app closes.
     public void shutdown() {
         closePlaybackResources();
     }
 
+    // Calculates a new seek position relative to the current logical position.
     private void seekRelative(long offsetUs) {
         if (videoFile == null) {
             return;
@@ -194,6 +209,7 @@ public class VideoPlayerModel {
         seekTo(baseTimestampUs + offsetUs);
     }
 
+    // Moves the decoder to the chosen time and resets the playback clock.
     private void seekTo(long timestampUs) {
         long logicalTimestampUs = clampSeekTimestamp(timestampUs);
         long grabTimestampUs = displayableSeekTimestamp(logicalTimestampUs);
@@ -214,6 +230,7 @@ public class VideoPlayerModel {
         }
     }
 
+    // Reopens the video, starts the timer and prepares the first image.
     private void startPlayback(long startTimestampUs, boolean initiallyPaused, long initialRelativeSeekBaseUs) {
         closePlaybackResources();
 
@@ -237,7 +254,9 @@ public class VideoPlayerModel {
         }
     }
 
+    // Creates the FFmpeg grabber, reads metadata and opens audio if present.
     private void openPlaybackResources(long startTimestampUs) throws Exception {
+        // Opening/decoding media can block; this starter version runs it on the GUI thread.
         converter = new JavaFXFrameConverter();
         grabber = new FFmpegFrameGrabber(videoFile);
         grabber.setImageMode(FrameGrabber.ImageMode.COLOR);
@@ -269,6 +288,7 @@ public class VideoPlayerModel {
         }
     }
 
+    // Clears outstanding media and establishes a new timing reference after seeking.
     private void resetPlaybackClock(long logicalTimestampUs) {
         pendingAudio.clear();
         preparedFrame = null;
@@ -280,6 +300,7 @@ public class VideoPlayerModel {
         pauseStartedNs = pauseRequested ? System.nanoTime() : 0;
     }
 
+    // Moves the playback time origin forward by the duration of a pause.
     private void resumePlaybackClock(long now) {
         if (pauseStartedNs > 0 && playbackStartNs > 0) {
             playbackStartNs += now - pauseStartedNs;
@@ -287,6 +308,7 @@ public class VideoPlayerModel {
         pauseStartedNs = 0;
     }
 
+    // Decodes the next frame if playback is running and none is ready.
     private void prepareNextFrame() {
         if (!playbackOpen || preparedFrame != null) {
             return;
@@ -299,7 +321,9 @@ public class VideoPlayerModel {
         }
     }
 
+    // Gets decoded frames, queues audio, processes images and calculates display times.
     private PreparedFrame readNextVideoFrame() throws Exception {
+        // Read frames until an image is found, or the media reaches its end.
         while (playbackOpen) {
             Frame frame = grabFrame();
             if (frame == null) {
@@ -344,6 +368,7 @@ public class VideoPlayerModel {
             InfoFrame info = new InfoFrame(frameNumber, timestampUs);
             processFrame(frame, info);
 
+            // Convert JavaCV pixels to a JavaFX Image before presenting it to the view.
             Image image = converter.convert(frame);
             long relativeTimestampUs = Math.max(0, timestampUs - firstTimestampUs);
             long logicalTimestampUs = logicalPlaybackBaseUs + relativeTimestampUs;
@@ -367,6 +392,7 @@ public class VideoPlayerModel {
     // (2) display a frame if it is due and (3) prepare the next frame if we're in the window after the previous frame
     // has gone to the display. We don't buffer frames here, just handling them one at a time. Not a great architecture,
     // living on the edge a bit, but can't do much better on a single thread.
+    // Runs once per JavaFX timer tick: audio first, then image display and frame preparation.
     private void pumpPlayback(long now) {
         if (!playbackOpen) {
             return;
@@ -398,6 +424,7 @@ public class VideoPlayerModel {
         }
     }
 
+    // Displays the due image and reports how much time was left before its deadline.
     private void displayPreparedFrame(long now) {
         PreparedFrame frame = preparedFrame;
         preparedFrame = null;
@@ -421,6 +448,7 @@ public class VideoPlayerModel {
         notifyFrameReady(frame.image());
     }
 
+    // Copies the audio samples from a frame into the pending audio queue.
     private void queueAudio(long timestampUs, Frame frame) {
         if (!audioOutputEnabled || audioPlayer == null) {
             return;
@@ -432,6 +460,7 @@ public class VideoPlayerModel {
         }
     }
 
+    // Sends audio chunks to the output device when their playback time arrives.
     private void writeDueAudio(long now) {
         // Handle some obvious early exits
         if (!audioOutputEnabled || audioPlayer == null) {
@@ -443,6 +472,7 @@ public class VideoPlayerModel {
         }
 
         // Here is the real time dependent logic
+        // Write only audio chunks whose timestamps are due, using a small lead time.
         long dueTimestampUs = firstTimestampUs + (now + AUDIO_LEAD_NS - playbackStartNs) / 1_000L;
         while (!pendingAudio.isEmpty()) {
             PendingAudio audio = pendingAudio.peek();
@@ -463,6 +493,7 @@ public class VideoPlayerModel {
         }
     }
 
+    // Sets the finished state and releases the decoder when the file ends.
     private void finishPlayback() {
         long endTimestampUs = videoDurationUs != NO_SEEK_REQUEST
                 ? videoDurationUs
@@ -476,6 +507,7 @@ public class VideoPlayerModel {
         notifyPlaybackStateChanged();
     }
 
+    // Closes playback and displays the error instead of crashing the GUI.
     private void handlePlaybackError(Exception e) {
         e.printStackTrace();
         closePlaybackResources();
@@ -484,6 +516,7 @@ public class VideoPlayerModel {
         notifyPlaybackStateChanged();
     }
 
+    // Stops the timer and safely releases audio, decoding and conversion resources.
     private void closePlaybackResources() {
         playbackTimer.stop();
         playbackOpen = false;
@@ -520,6 +553,7 @@ public class VideoPlayerModel {
         }
     }
 
+    // Removes the filename extension to make a stable identifier for effects.
     private String mediaName(File file) {
         String fileName = file.getName();
         int extensionStart = fileName.lastIndexOf('.');
@@ -529,6 +563,7 @@ public class VideoPlayerModel {
         return fileName.substring(0, extensionStart);
     }
 
+    // Prevents seeking before zero or beyond the known video duration.
     private long clampSeekTimestamp(long timestampUs) {
         long clampedTimestampUs = Math.max(0, timestampUs);
         long durationUs = videoDurationUs;
@@ -538,6 +573,7 @@ public class VideoPlayerModel {
         return clampedTimestampUs;
     }
 
+    // Avoids seeking beyond the final displayable frame.
     private long displayableSeekTimestamp(long logicalTimestampUs) {
         long durationUs = videoDurationUs;
         if (durationUs == NO_SEEK_REQUEST || logicalTimestampUs < durationUs) {
@@ -552,18 +588,22 @@ public class VideoPlayerModel {
         return Math.max(0, durationUs - frameDurationUs);
     }
 
+    // Applies the configured visual effects to a frame in list order.
     private void processFrame(Frame frame, InfoFrame info) throws Exception {
+        // Effect order matters: each processor changes the frame for the next one.
         for (FrameProcessor processor : frameProcessors) {
             processor.process(frame, info);
         }
     }
 
+    // Passes video details to each visual effect before first use.
     private void initialiseFrameProcessors(InfoVideo videoInfo) throws Exception {
         for (FrameProcessor processor : frameProcessors) {
             processor.initialise(videoInfo);
         }
     }
 
+    // Reads video and audio frames if audio exists, otherwise only video.
     private Frame grabFrame() throws Exception {
         if (audioAvailable) {
             return grabber.grab();
@@ -571,32 +611,39 @@ public class VideoPlayerModel {
         return grabber.grabImage();
     }
 
+    // Drops buffered audio following pause or seek.
     private void flushAudioOutput() {
         if (audioPlayer != null) {
             audioPlayer.flush();
         }
     }
 
+    // Uses a callback to send the image dimensions to the controller.
     private void notifyVideoSizeChanged(int width, int height) {
         videoSizeChangedHandler.accept(width, height);
     }
 
+    // Uses a callback to send an image to the controller.
     private void notifyFrameReady(Image image) {
         frameReadyHandler.accept(image);
     }
 
+    // Uses a callback to update the status message.
     private void notifyStatusChanged(String status) {
         statusChangedHandler.accept(status);
     }
 
+    // Uses a callback to update the play/pause controls.
     private void notifyPlaybackStateChanged() {
         playbackStateChangedHandler.accept(playbackOpen, pauseRequested);
     }
 
+    // Uses a callback to update the sound controls.
     private void notifyAudioOutputStateChanged() {
         audioOutputStateChangedHandler.accept(audioOutputEnabled);
     }
 
+    // Groups a ready image with frame and timing metadata.
     private record PreparedFrame(
             Image image,
             int frameNumber,
@@ -606,36 +653,44 @@ public class VideoPlayerModel {
             long preparedAtNs) {
     }
 
+    // Holds one audio chunk while keeping track of partial writes to the sound device.
     private static class PendingAudio {
         private final long timestampUs;
         private final byte[] samples;
         private int offset;
 
+        // Stores the timestamp and bytes for one queued audio packet.
         PendingAudio(long timestampUs, byte[] samples) {
             this.timestampUs = timestampUs;
             this.samples = samples;
         }
 
+        // Returns the media timestamp for this audio packet.
         long timestampUs() {
             return timestampUs;
         }
 
+        // Returns the audio bytes that still need to be played.
         byte[] samples() {
             return samples;
         }
 
+        // Returns how many bytes have already been written.
         int offset() {
             return offset;
         }
 
+        // Calculates the number of bytes that have not yet been written.
         int remaining() {
             return samples.length - offset;
         }
 
+        // Moves the write position forward after sending audio to the sound device.
         void advance(int byteCount) {
             offset += byteCount;
         }
 
+        // Checks whether this packet has been completely written.
         boolean finished() {
             return offset >= samples.length;
         }

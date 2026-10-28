@@ -27,6 +27,7 @@ import org.bytedeco.javacv.Frame;
  * </p>
  */
 public class FrameMottler extends FrameProcessor {
+    // Controls the size and appearance of the simulated film damage.
     private static final int NOISE_GRID_WIDTH = 64;
     private static final int NOISE_GRID_HEIGHT = 36;
     private static final int FINE_SMOOTHING_PASSES = 1;
@@ -54,10 +55,12 @@ public class FrameMottler extends FrameProcessor {
     private static final int MEDIUM_FIELD_SALT = 0x4d454449;
     private static final int LARGE_FIELD_SALT = 0x4c415247;
 
+    // Gives repeated mottle effects separate random patterns.
     private static int nextInstanceIndex;
 
     private final int instanceIndex;
     private int mediaSeed;
+    // Cache slowly changing damage fields instead of rebuilding them every frame.
     private int cachedDamageMaskSegment = Integer.MIN_VALUE;
     private double[] damageMaskA;
     private double[] damageMaskB;
@@ -72,11 +75,13 @@ public class FrameMottler extends FrameProcessor {
     private int blockGreenScaleIndex;
     private int blockRedScaleIndex;
 
+    // Initialises one independent instance of the old-film mottle effect.
     public FrameMottler() {
         super();
         instanceIndex = nextInstanceIndex++;
     }
 
+    // Builds the reusable noise sampling tables and colour scaling tables.
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
@@ -85,6 +90,7 @@ public class FrameMottler extends FrameProcessor {
         buildScaleLookups();
     }
 
+    // Generates uneven brightness and stains for the current frame, then applies them.
     @Override
     public void process(Frame frame, InfoFrame info) throws Exception {
         if (frame.image == null || frame.image.length == 0 || frame.image[0] == null) {
@@ -103,6 +109,7 @@ public class FrameMottler extends FrameProcessor {
             throw new Exception("FrameMottler requires at least three image channels");
         }
 
+        // Build two independently seeded fields: one for brightness and one for colour stains.
         double[] brightnessField = buildMultiScaleNoiseField(info.frameNumber(), BRIGHTNESS_FIELD_SALT);
         double[] stainField = buildMultiScaleNoiseField(info.frameNumber(), STAIN_FIELD_SALT);
         int damageMaskSegment = info.frameNumber() / DAMAGE_MASK_BLEND_FRAMES;
@@ -112,6 +119,7 @@ public class FrameMottler extends FrameProcessor {
         mottleFrame(pixels, brightnessField, stainField, damageMaskBlend);
     }
 
+    // Precalculates how image coordinates map onto the small noise grid.
     private void buildSamplingLookups() {
         xGridLeft = new int[videoInfo.imageWidth()];
         xGridBlend = new double[videoInfo.imageWidth()];
@@ -122,6 +130,7 @@ public class FrameMottler extends FrameProcessor {
         buildAxisSamplingLookups(videoInfo.imageHeight(), NOISE_GRID_HEIGHT, yGridTop, yGridBlend);
     }
 
+    // Finds the nearest noise cells and interpolation weight for each pixel.
     private void buildAxisSamplingLookups(int imageSize, int gridSize, int[] gridStarts, double[] gridBlends) {
         if (imageSize <= 1 || gridSize <= 1) {
             for (int position = 0; position < imageSize; position++) {
@@ -145,6 +154,7 @@ public class FrameMottler extends FrameProcessor {
         }
     }
 
+    // Builds tables for adjusting colour values without multiplying every pixel.
     private void buildScaleLookups() {
         double darkestBrightnessScale = 1.0 - MAX_DARKEN_PERCENTAGE / 100.0;
         double brightestScale = 1.0 + MAX_LIGHTEN_PERCENTAGE / 100.0;
@@ -171,6 +181,7 @@ public class FrameMottler extends FrameProcessor {
         }
     }
 
+    // Rebuilds slow-changing damage masks only when the timeline segment changes.
     private void ensureDamageMaskFields(int segment) {
         if (segment == cachedDamageMaskSegment) {
             return;
@@ -181,6 +192,7 @@ public class FrameMottler extends FrameProcessor {
         damageMaskB = buildNoiseField(segment + 1, DAMAGE_MASK_SALT, DAMAGE_MASK_SMOOTHING_PASSES);
     }
 
+    // Combines fine, medium and broad random patterns for natural-looking stains.
     private double[] buildMultiScaleNoiseField(int frameNumber, int fieldSalt) {
         double[] fineField = buildNoiseField(frameNumber, fieldSalt ^ FINE_FIELD_SALT, FINE_SMOOTHING_PASSES);
         double[] mediumField = buildNoiseField(frameNumber, fieldSalt ^ MEDIUM_FIELD_SALT, MEDIUM_SMOOTHING_PASSES);
@@ -197,6 +209,7 @@ public class FrameMottler extends FrameProcessor {
         return field;
     }
 
+    // Generates a seeded random grid, repeatedly smooths it and normalises the result.
     private double[] buildNoiseField(int frameNumber, int fieldSalt, int smoothingPasses) {
         double[] field = new double[NOISE_GRID_WIDTH * NOISE_GRID_HEIGHT];
         double[] scratch = new double[field.length];
@@ -217,6 +230,7 @@ public class FrameMottler extends FrameProcessor {
         return field;
     }
 
+    // Creates a repeatable random seed for a specific frame and noise layer.
     private long seedForField(int frameNumber, int fieldSalt) {
         long seed = Integer.toUnsignedLong(mediaSeed);
         seed ^= (long) frameNumber * 0x9e3779b97f4a7c15L;
@@ -230,6 +244,7 @@ public class FrameMottler extends FrameProcessor {
         return seed;
     }
 
+    // Replaces each grid cell with the average of its nearby neighbours.
     private void smoothField(double[] source, double[] destination) {
         for (int y = 0; y < NOISE_GRID_HEIGHT; y++) {
             for (int x = 0; x < NOISE_GRID_WIDTH; x++) {
@@ -250,6 +265,7 @@ public class FrameMottler extends FrameProcessor {
         }
     }
 
+    // Rescales values into the range zero to one.
     private void normaliseField(double[] field) {
         double min = Double.POSITIVE_INFINITY;
         double max = Double.NEGATIVE_INFINITY;
@@ -269,6 +285,7 @@ public class FrameMottler extends FrameProcessor {
         }
     }
 
+    // Processes small blocks rather than recalculating stain strength for every pixel.
     private void mottleFrame(
             ByteBuffer pixels,
             double[] brightnessField,
@@ -279,6 +296,7 @@ public class FrameMottler extends FrameProcessor {
         int channels = videoInfo.imageChannels();
         int stride = videoInfo.imageStride();
 
+        // All pixels in one small block share the same stain and brightness settings.
         for (int blockY = 0; blockY < height; blockY += EFFECT_BLOCK_SIZE) {
             int blockYEnd = Math.min(blockY + EFFECT_BLOCK_SIZE, height);
             int sampleY = (blockY + blockYEnd - 1) / 2;
@@ -308,6 +326,7 @@ public class FrameMottler extends FrameProcessor {
         }
     }
 
+    // Calculates colour scaling for a block and skips blocks with no damage.
     private boolean prepareScaleIndicesForBlock(
             int x,
             int y,
@@ -326,6 +345,7 @@ public class FrameMottler extends FrameProcessor {
         return true;
     }
 
+    // Blends two damage patterns so stains change gradually over time.
     private double sampleDamageMask(int x, int y, double damageMaskBlend) {
         double maskA = sampleField(damageMaskA, x, y);
         double maskB = sampleField(damageMaskB, x, y);
@@ -333,6 +353,7 @@ public class FrameMottler extends FrameProcessor {
         return smoothstep((mask - DAMAGE_MASK_THRESHOLD) / (1.0 - DAMAGE_MASK_THRESHOLD));
     }
 
+    // Interpolates four neighbouring noise-grid cells at one image coordinate.
     private double sampleField(double[] field, int x, int y) {
         int x0 = xGridLeft[x];
         int x1 = Math.min(x0 + 1, NOISE_GRID_WIDTH - 1);
@@ -347,6 +368,7 @@ public class FrameMottler extends FrameProcessor {
         return lerp(top, bottom, yBlend);
     }
 
+    // Converts brightness and stain intensity into red, green and blue scale tables.
     private void setBlockScaleIndices(double brightness, double stain, double damageStrength) {
         double brightnessScale;
         if (brightness < 0.5) {
@@ -368,6 +390,7 @@ public class FrameMottler extends FrameProcessor {
         blockRedScaleIndex = scaleIndex(redScale);
     }
 
+    // Uses those colour lookup tables on all pixels in the selected block.
     private void applyMottleBlock(
             ByteBuffer pixels,
             int blockX,
@@ -393,24 +416,29 @@ public class FrameMottler extends FrameProcessor {
         }
     }
 
+    // Finds the nearest precomputed colour scaling table.
     private int scaleIndex(double scale) {
         double blend = (scale - minimumScale) / (maximumScale - minimumScale);
         return clamp((int) Math.round(blend * (SCALE_LOOKUP_SIZE - 1)), 0, SCALE_LOOKUP_SIZE - 1);
     }
 
+    // Blends between two numbers.
     private double lerp(double a, double b, double blend) {
         return a + (b - a) * blend;
     }
 
+    // Smooths a zero-to-one value so transitions are less abrupt.
     private double smoothstep(double value) {
         value = clamp(value, 0.0, 1.0);
         return value * value * (3.0 - 2.0 * value);
     }
 
+    // Restricts a number to its allowed range.
     private int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(value, max));
     }
 
+    // Restricts a number to its allowed range.
     private double clamp(double value, double min, double max) {
         return Math.max(min, Math.min(value, max));
     }
