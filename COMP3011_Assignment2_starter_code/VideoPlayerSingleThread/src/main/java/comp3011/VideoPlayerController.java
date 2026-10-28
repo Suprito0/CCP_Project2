@@ -37,13 +37,13 @@ public class VideoPlayerController {
     // Creates the view and model, then connects buttons and callbacks.
     public VideoPlayerController(
             boolean audioEnabled,
-            List<FrameProcessor> frameProcessors,
+            List<String> effectNames,
             BiConsumer<Integer, Integer> videoSizeChangedHandler) {
         this.view = new VideoPlayerView();
         this.videoSizeChangedHandler = videoSizeChangedHandler;
         model = new VideoPlayerModel(
                 audioEnabled,
-                frameProcessors,
+                effectNames,
                 this::onVideoSizeChanged,
                 this::onFrameReady,
                 this::onStatusChanged,

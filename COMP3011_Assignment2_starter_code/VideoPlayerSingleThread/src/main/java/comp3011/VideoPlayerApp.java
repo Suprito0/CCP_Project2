@@ -52,7 +52,7 @@ public class VideoPlayerApp extends Application {
 
         controller = new VideoPlayerController(
                 commandLineController.isAudioRequested(),
-                FrameProcessorFactory.createProcessors(commandLineController.getEffectNames()),
+                commandLineController.getEffectNames(),
                 this::setVideoSize);
 
         // Only the JavaFX thread should make changes to the visible scene graph.
