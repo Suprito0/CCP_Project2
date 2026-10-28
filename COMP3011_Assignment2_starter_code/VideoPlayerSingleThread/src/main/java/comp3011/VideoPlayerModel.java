@@ -96,11 +96,11 @@ public class VideoPlayerModel {
     // Stores the playback callbacks and the list of available visual effects.
     public VideoPlayerModel(
             boolean audioEnabled,
+            List<FrameProcessor> processors,
             BiConsumer<Integer, Integer> videoSizeChangedHandler,
             Consumer<Image> frameReadyHandler,
             Consumer<String> statusChangedHandler,
             BiConsumer<Boolean, Boolean> playbackStateChangedHandler,
-            List<FrameProcessor> processors,
             Consumer<Boolean> audioOutputStateChangedHandler) {
         audioOutputEnabled = audioEnabled;
         this.videoSizeChangedHandler = videoSizeChangedHandler;
