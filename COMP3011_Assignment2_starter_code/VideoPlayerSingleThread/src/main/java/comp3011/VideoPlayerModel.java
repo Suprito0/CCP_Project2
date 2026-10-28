@@ -100,6 +100,7 @@ public class VideoPlayerModel {
             Consumer<Image> frameReadyHandler,
             Consumer<String> statusChangedHandler,
             BiConsumer<Boolean, Boolean> playbackStateChangedHandler,
+            List<FrameProcessor> processors,
             Consumer<Boolean> audioOutputStateChangedHandler) {
         audioOutputEnabled = audioEnabled;
         this.videoSizeChangedHandler = videoSizeChangedHandler;
@@ -107,17 +108,7 @@ public class VideoPlayerModel {
         this.statusChangedHandler = statusChangedHandler;
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
-        this.frameProcessors = new ArrayList<>();
-//        frameProcessors.add(new FrameBleeder());
-//        frameProcessors.add(new FrameScratcher());
-//        frameProcessors.add(new FrameDuster());
-//        frameProcessors.add(new FramePepperer());
-//        frameProcessors.add(new FrameBlackAndWhiter());
-//        frameProcessors.add(new FrameYellower());
-//        frameProcessors.add(new FrameVignetter());
-//        frameProcessors.add(new FrameFlickerer());
-//        frameProcessors.add(new FrameJitterer());
-//        frameProcessors.add(new FrameNumberer());
+        this.frameProcessors = new ArrayList<>(processors);
     }
 
     // Stores the selected file, clears previous timing and starts playback from zero.
