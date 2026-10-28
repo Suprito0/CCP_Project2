@@ -52,7 +52,7 @@ public class FrameDuster extends FrameProcessor {
     @Override
     public void initialise(InfoVideo videoInfo) throws Exception {
         super.initialise(videoInfo);
-        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), effectInstanceIndex() + SEED_SALT); 
+        mediaSeed = saltedMediaSeed(videoInfo.mediaName(), effectInstanceIndex() + SEED_SALT);
     }
 
     // Chooses how many dust marks to draw on this frame using a seeded random

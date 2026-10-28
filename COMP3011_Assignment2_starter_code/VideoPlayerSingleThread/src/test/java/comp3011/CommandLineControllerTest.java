@@ -1,12 +1,13 @@
 
 package comp3011;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 class CommandLineControllerTest {
@@ -24,7 +25,7 @@ class CommandLineControllerTest {
 
         // Test multiple short options combined into one argument.
         CommandLineController cli = new CommandLineController(
-                new String[] {"-jfddn", video().getAbsolutePath()});
+                new String[] { "-jfddn", video().getAbsolutePath() });
 
         // Check that valid arguments allow the application to launch.
         assertTrue(cli.shouldLaunchApplication());
@@ -33,8 +34,7 @@ class CommandLineControllerTest {
         // including repeated effects such as dust.
         assertEquals(
                 List.of("jitter", "flicker", "dust", "dust", "number"),
-                cli.getEffectNames()
-        );
+                cli.getEffectNames());
     }
 
     @Test
@@ -53,8 +53,7 @@ class CommandLineControllerTest {
         // Check that all effects are recognised in the given order.
         assertEquals(
                 List.of("dust", "jitter", "dust", "number"),
-                cli.getEffectNames()
-        );
+                cli.getEffectNames());
     }
 
     @Test
@@ -64,17 +63,13 @@ class CommandLineControllerTest {
         assertEquals(
                 1,
                 new CommandLineController(
-                        new String[] {"--unknown"}
-                ).getExitCode()
-        );
+                        new String[] { "--unknown" }).getExitCode());
 
         // An unknown short option should prevent the application
         // from launching, even when a file argument is provided.
         assertFalse(
                 new CommandLineController(
-                        new String[] {"-z", "fake.mp4"}
-                ).shouldLaunchApplication()
-        );
+                        new String[] { "-z", "fake.mp4" }).shouldLaunchApplication());
     }
 
     @Test
@@ -82,7 +77,7 @@ class CommandLineControllerTest {
 
         // Request the help message without launching the player.
         CommandLineController cli = new CommandLineController(
-                new String[] {"--help"});
+                new String[] { "--help" });
 
         // Help should exit successfully.
         assertEquals(0, cli.getExitCode());
@@ -116,10 +111,8 @@ class CommandLineControllerTest {
                 List.of(
                         "number", "scratch", "flicker",
                         "black-and-white", "yellow", "vignette",
-                        "dust", "jitter", "mottle", "bleed", "pepper"
-                ),
-                cli.getEffectNames()
-        );
+                        "dust", "jitter", "mottle", "bleed", "pepper"),
+                cli.getEffectNames());
     }
 
     @Test
@@ -131,9 +124,7 @@ class CommandLineControllerTest {
                 new CommandLineController(
                         new String[] {
                                 "-1", "-2", video().getAbsolutePath()
-                        }
-                ).getExitCode()
-        );
+                        }).getExitCode());
 
         // Providing two video file arguments should also return an error.
         assertEquals(
@@ -142,8 +133,6 @@ class CommandLineControllerTest {
                         new String[] {
                                 video().getAbsolutePath(),
                                 video().getAbsolutePath()
-                        }
-                ).getExitCode()
-        );
+                        }).getExitCode());
     }
 }

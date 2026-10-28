@@ -43,7 +43,8 @@ import javafx.scene.image.WritableImage;
  * audio and frame processing run on background threads, while the JavaFX thread
  * handles playback controls and displays frames in the correct order.
  * It publishes decoded frames and playback state through callbacks supplied
- * by its owning {@link VideoPlayerController}, keeping it decoupled from the view.
+ * by its owning {@link VideoPlayerController}, keeping it decoupled from the
+ * view.
  * </p>
  */
 public class VideoPlayerModel {
@@ -54,7 +55,8 @@ public class VideoPlayerModel {
     private static final int MAX_QUEUED_FRAMES = 12;
     private static final int MAX_AUDIO_CHUNKS = 40;
 
-    // Effects are stored by name so each processing worker can create its own copies.
+    // Effects are stored by name so each processing worker can create its own
+    // copies.
     // The handlers pass video frames and playback state back to the controller.
     private final List<String> effectNames;
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
@@ -134,7 +136,8 @@ public class VideoPlayerModel {
         if (session == null) {
             if (videoFile != null) {
                 long restartUs = durationUs > 0 && currentTimestampUs >= durationUs
-                        ? 0 : currentTimestampUs;
+                        ? 0
+                        : currentTimestampUs;
                 startAt(restartUs, false);
             }
             return;
@@ -195,7 +198,7 @@ public class VideoPlayerModel {
         stopSession();
         pauseRequested = startPaused;
 
-        PlaybackSession next = new PlaybackSession(timestampUs, audioOutputEnabled, startPaused);
+        PlaybackSession next = new PlaybackSession(videoFile, timestampUs, audioOutputEnabled, startPaused);
         session = next;
         statusChangedHandler.accept(videoFile.getName());
         playbackTimer.start();
@@ -274,7 +277,7 @@ public class VideoPlayerModel {
         // Once decoding and frame processing are done and all frames are shown,
         // update the state and release the remaining playback resources.
         if (active.decoderFinished && active.nextDisplayIndex == active.frameCount
-                && active.readyFrames.isEmpty()) {
+                && active.readyFrames.isEmpty() && active.audioFinished) {
             currentTimestampUs = durationUs > 0 ? durationUs : currentTimestampUs;
             stopSession();
             pauseRequested = true;
@@ -288,6 +291,7 @@ public class VideoPlayerModel {
     private class PlaybackSession {
         // A semaphore limits queued frames, and the frame order buffer stores
         // completed frames by sequence number for the JavaFX thread.
+        private final File mediaFile;
         private final long startTimestampUs;
         private final Semaphore frameSlots = new Semaphore(MAX_QUEUED_FRAMES);
         private final FrameOrderBuffer<ReadyFrame> readyFrames = new FrameOrderBuffer<>();
@@ -301,6 +305,7 @@ public class VideoPlayerModel {
         // volatile makes state changes visible between the threads.
         private volatile boolean cancelled;
         private volatile boolean decoderFinished;
+        private volatile boolean audioFinished;
         private volatile boolean paused;
         private volatile boolean audioEnabled;
         private volatile Exception failure;
@@ -313,15 +318,17 @@ public class VideoPlayerModel {
         private long nextDisplayIndex; // Only accessed on the JavaFX thread.
 
         // Sets up the decoder and a separate worker for frame processing.
-        private PlaybackSession(long timestampUs, boolean audioEnabled, boolean paused) {
+        private PlaybackSession(File mediaFile, long timestampUs, boolean audioEnabled, boolean paused) {
+            // Keep the media file for this specific session; a new play() may select a
+            // different file.
+            this.mediaFile = mediaFile;
             this.startTimestampUs = timestampUs;
             this.audioEnabled = audioEnabled;
             this.paused = paused;
 
-
             // Use multiple cores for expensive frame effects while keeping the GUI free.
             int cores = Runtime.getRuntime().availableProcessors();
-            int workerCount = Math.max(2, Math.min(4, cores - 1)); 
+            int workerCount = Math.max(2, Math.min(4, cores - 1));
             processingPool = Executors.newFixedThreadPool(workerCount, task -> {
                 Thread thread = new Thread(task, "frame-processor");
                 thread.setDaemon(true);
@@ -368,7 +375,7 @@ public class VideoPlayerModel {
         // the processing worker. The decoder thread owns the FFmpeg grabber.
         private void decode() {
             // FFmpegFrameGrabber is owned by the decoder thread only.
-            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoFile)) {
+            try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(mediaFile)) {
                 grabber.setImageMode(FrameGrabber.ImageMode.COLOR);
                 grabber.setSampleMode(FrameGrabber.SampleMode.SHORT);
                 grabber.start();
@@ -380,6 +387,7 @@ public class VideoPlayerModel {
                 int videoFrames = grabber.getLengthInVideoFrames();
                 long length = grabber.getLengthInTime();
                 boolean hasAudio = grabber.hasAudio();
+                audioFinished = !hasAudio;
 
                 int videoWidth = grabber.getImageWidth();
                 int videoHeight = grabber.getImageHeight();
@@ -433,7 +441,7 @@ public class VideoPlayerModel {
                     if (videoInfo == null) {
                         firstVideoTimestampUs = timestampUs;
                         videoInfo = new InfoVideo(
-                                mediaName(videoFile), videoFrames, frame.imageWidth,
+                                mediaName(mediaFile), videoFrames, frame.imageWidth,
                                 frame.imageHeight, frame.imageDepth, frame.imageChannels,
                                 frame.imageStride, rate, intFrameRate, (int) frameDurationUs,
                                 grabber.getPixelFormat());
@@ -601,6 +609,7 @@ public class VideoPlayerModel {
                 if (audioPlayer != null) {
                     audioPlayer.close();
                 }
+                audioFinished = true;
             }
         }
     }

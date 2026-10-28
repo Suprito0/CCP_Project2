@@ -14,8 +14,8 @@ public class FrameProcessorFactory {
         for (String name : names) {
             FrameProcessor processor = create(name);
             int occurrence = counts.getOrDefault(name, 0);
-            counts.put(name, occurrence + 1); 
-            processor.setAssignedInstanceIndex(occurrence); 
+            counts.put(name, occurrence + 1);
+            processor.setAssignedInstanceIndex(occurrence);
             processors.add(processor);
         }
         return processors;

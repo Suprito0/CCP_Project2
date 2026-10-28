@@ -38,7 +38,8 @@ import javafx.scene.shape.StrokeLineCap;
  * This is the JavaFX presentation layer for the video player. It builds the
  * scene graph containing the video surface, playback controls, status display,
  * and tooltips. It exposes controls and display-update methods for
- * {@link VideoPlayerController}, but contains no playback logic (which all lives
+ * {@link VideoPlayerController}, but contains no playback logic (which all
+ * lives
  * in the controller).
  * </p>
  */
@@ -178,8 +179,10 @@ public class VideoPlayerView {
         audioButton.setDisable(disabled);
     }
 
-    // There are a bunch of tooltip handling methods starting from here. We want to use tooltips so that people with
-    // mouse/trackpads can learn what the hotkeys are and hopefully just use them instead, because they are easy/fast.
+    // There are a bunch of tooltip handling methods starting from here. We want to
+    // use tooltips so that people with
+    // mouse/trackpads can learn what the hotkeys are and hopefully just use them
+    // instead, because they are easy/fast.
     // Registers the keyboard shortcut text for each button.
     private void setButtonTooltips() {
         setButtonTooltip(startOverButton, "[HOME]");
@@ -258,8 +261,10 @@ public class VideoPlayerView {
         return button;
     }
 
-    // Decided to hand code icons here instead of using pre-drawn assets/resources, since the icons are simple and
-    // universally recognised and this one they will look better on different DPI displays.
+    // Decided to hand code icons here instead of using pre-drawn assets/resources,
+    // since the icons are simple and
+    // universally recognised and this one they will look better on different DPI
+    // displays.
     // Draws the circular arrow icon used for restart and five-second seeking.
     private Node createLoopIcon(boolean clockwise, String text) {
         Pane pane = new Pane();
